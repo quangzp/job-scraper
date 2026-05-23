@@ -1,0 +1,260 @@
+{
+  "topcv": {
+    "harvester": {
+      "job_list_item": ".job-item-search-result",
+      "job_link": "h3.title > a",
+      "next_page": "ul.pagination > li:nth-child(3) > a"
+    },
+    "extractor": {
+      "title": "h1.job-detail__info--title",
+      "company_name": ".company-name-label",
+      "company_url": ".company-name-label a",
+      "contract_type": ".job-detail__body-right--box-general .box-general-group-info:has-text('Hình thức làm việc') .box-general-group-info-value",
+      "deadline": ".job-detail__info--deadline-date",
+      "description": ".job-description",
+      "experience_level": ".job-detail__info--section-content:has-text('Kinh nghiệm') .job-detail__info--section-content-value",
+      "location": ".job-detail__info--section-content:has-text('Địa điểm') .job-detail__info--section-content-value",
+      "posted_time": "",
+      "salary": ".job-detail__info--section-content:has-text('Mức lương') .job-detail__info--section-content-value",
+      "sector": ".job-tags__group:has-text('Chuyên môn') .job-tags__group-list-tag-scroll a"
+    }
+  },
+  "linkedin": {
+    "harvester": {
+      "login_email": "input#username",
+      "login_password": "input#password",
+      "login_submit": "button[type='submit']",
+      "logged_in_marker": "nav.global-nav, a[href*='/feed/']",
+      "checkpoint": "input[name='pin'], input#input__phone_verification_pin, #captcha-internal, form[action*='checkpoint']",
+      "soft_block": [
+        "form[action*='checkpoint']",
+        "input[name='pin']",
+        "input#input__phone_verification_pin",
+        "#captcha-internal",
+        "[data-test-id*='captcha']",
+        "[id*='captcha']",
+        "[class*='captcha']"
+      ],
+      "authwall": [
+        "main.authwall",
+        ".authwall",
+        "form[action*='/uas/login']"
+      ],
+      "security_verification": [
+        "input[name='challengeId']",
+        "input[name='csrfToken']",
+        "form[action*='checkpoint']",
+        "form[action*='challenge']"
+      ],
+      "restricted_notice": [
+        ".artdeco-inline-feedback--error",
+        ".global-alert",
+        ".msg-overlay-bubble-header",
+        "[role='alert']:has-text('restricted')",
+        "[role='alert']:has-text('unusual activity')",
+        "[role='alert']:has-text('temporarily')"
+      ],
+      "feed_marker": "main, .scaffold-finite-scroll",
+      "jobs_nav": [
+        "a.global-nav__primary-link[href*='/jobs/']",
+        "a[href*='/jobs/'][data-link-to='jobs']",
+        "a[href*='/jobs/']"
+      ],
+      "jobs_search_entry": [
+        "a[href*='/jobs/search/']:has-text('Tìm kiếm ngay')",
+        "a[href*='/jobs/search/']:has-text('Search now')",
+        "a[href*='/jobs/search/']"
+      ],
+      "jobs_keyword_input": [
+        "input[id^='jobs-search-box-keyword-id-'][role='combobox']",
+        "input[aria-label*='Search by title']",
+        "input[aria-label*='Search jobs']",
+        "input[aria-label*='Tìm kiếm theo chức danh'][role='combobox']",
+        "input[placeholder='Chức danh, kỹ năng hoặc Công ty']",
+        "input[placeholder='Chức danh, kỹ năng hoặc công ty']"
+      ],
+      "jobs_location_input": [
+        "input[id^='jobs-search-box-location-id-'][role='combobox']",
+        "input[aria-label*='City, state']",
+        "input[aria-label*='Location']",
+        "input[aria-label*='Địa điểm'][role='combobox']",
+        "input[aria-label*='Thành phố'][role='combobox']",
+        "input[placeholder='Thành phố, tiểu bang hoặc mã zip']",
+        "input[placeholder='City, state, or zip code']"
+      ],
+      "jobs_search_submit": [
+        "button.jobs-search-box__submit-button",
+        "button[aria-label*='Search']",
+        "button[aria-label*='Tìm kiếm']"
+      ],
+      "date_posted_filter_button": [
+        "[data-basic-filter-parameter-name='timePostedRange'] button#searchFilter_timePostedRange",
+        "button#searchFilter_timePostedRange"
+      ],
+      "date_posted_24h_option": [
+        "[data-basic-filter-parameter-name='timePostedRange'] label[for='timePostedRange-r86400']",
+        "label[for='timePostedRange-r86400']"
+      ],
+      "date_posted_apply_button": "[data-basic-filter-parameter-name='timePostedRange'] .reusable-search-filters-buttons button.artdeco-button--primary",
+      "jobs_results_marker": ".jobs-search-results-list, .jobs-search-results-list__list, div.jobs-search-results-list, .job-card-container, li:has(a[href*='/jobs/view/'])",
+      "jobs_results_container": [
+        ".jobs-search-results-list",
+        ".jobs-search-results-list__list",
+        "div.jobs-search-results-list",
+        "main"
+      ],
+      "job_card": [
+        ".job-card-container",
+        ".jobs-search-results__list-item",
+        "li:has(a[href*='/jobs/view/'])"
+      ],
+      "job_link": [
+        "a.job-card-container__link",
+        "a.job-card-list__title--link",
+        "a[href*='/jobs/view/']"
+      ],
+      "job_link_by_id_template": [
+        "a.job-card-container__link[href*='/jobs/view/{job_id}']",
+        "a.job-card-list__title--link[href*='/jobs/view/{job_id}']",
+        "a[href*='/jobs/view/{job_id}']"
+      ],
+      "job_card_by_id_template": [
+        ".job-card-container:has(a[href*='/jobs/view/{job_id}'])",
+        ".jobs-search-results__list-item:has(a[href*='/jobs/view/{job_id}'])",
+        "li:has(a[href*='/jobs/view/{job_id}'])"
+      ],
+      "next_page": [
+        "button[aria-label='View next page']",
+        "button[aria-label='Xem trang tiếp theo']",
+        "button[aria-label*='Next']",
+        "button[aria-label*='tiếp']",
+        ".artdeco-pagination__button--next"
+      ]
+    },
+    "extractor": {
+      "detail_ready": [
+        ".job-details-jobs-unified-top-card",
+        ".jobs-search__job-details--container",
+        ".top-card-layout"
+      ],
+      "detail_scroll_container": [
+        ".jobs-search__job-details--wrapper",
+        ".jobs-search__job-details--container",
+        ".jobs-details__main-content",
+        ".job-view-layout",
+        "main"
+      ],
+      "title": [
+        ".job-details-jobs-unified-top-card__job-title h1",
+        "h1.job-details-jobs-unified-top-card__job-title",
+        ".top-card-layout__title",
+        "h1"
+      ],
+      "company_name": [
+        ".job-details-jobs-unified-top-card__company-name a",
+        ".job-details-jobs-unified-top-card__company-name",
+        ".topcard__org-name-link",
+        ".topcard__flavor"
+      ],
+      "company_url": [
+        ".job-details-jobs-unified-top-card__company-name a",
+        ".topcard__org-name-link"
+      ],
+      "contract_type": [
+        ".job-details-fit-level-preferences button:has-text('Toàn thời gian')",
+        ".job-details-fit-level-preferences button:has-text('Bán thời gian')",
+        ".job-details-fit-level-preferences button:has-text('Hợp đồng')",
+        ".job-details-fit-level-preferences button:has-text('Thực tập')",
+        ".job-details-fit-level-preferences button:has-text('Full-time')",
+        ".job-details-fit-level-preferences button:has-text('Part-time')",
+        ".job-details-fit-level-preferences button:has-text('Contract')",
+        ".job-details-fit-level-preferences button:has-text('Internship')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Full-time')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Part-time')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Contract')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Internship')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Toàn thời gian')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Bán thời gian')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Hợp đồng')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Thực tập')"
+      ],
+      "deadline": "",
+      "description": [
+        ".jobs-description__content .jobs-box__html-content",
+        ".jobs-description-content__text",
+        "#job-details",
+        ".description__text"
+      ],
+      "description_show_more": [
+        "button.jobs-description__footer-button",
+        "button[aria-label*='See more']",
+        "button[aria-label*='Xem thêm']"
+      ],
+      "experience_level": [
+        ".job-details-jobs-unified-top-card__job-insight:has-text('level')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Entry')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Associate')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Mid-Senior')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Director')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Executive')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Cấp độ')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Cộng sự')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Giám đốc')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('Điều hành')"
+      ],
+      "location": [
+        ".job-details-jobs-unified-top-card__primary-description-container .tvm__text--low-emphasis:first-child",
+        ".job-details-jobs-unified-top-card__primary-description-container .tvm__text:has-text(',')",
+        ".job-details-jobs-unified-top-card__primary-description-container span:has-text('Vietnam')",
+        ".job-details-jobs-unified-top-card__primary-description-container span:has-text('Việt Nam')",
+        ".topcard__flavor--bullet"
+      ],
+      "posted_time": [
+        ".job-details-jobs-unified-top-card__primary-description-container .tvm__text--low-emphasis:has-text('ago')",
+        ".job-details-jobs-unified-top-card__primary-description-container .tvm__text--low-emphasis:has-text('reposted')",
+        ".job-details-jobs-unified-top-card__primary-description-container .tvm__text--low-emphasis:has-text('trước')",
+        ".job-details-jobs-unified-top-card__primary-description-container .tvm__text--low-emphasis:has-text('đăng lại')",
+        ".posted-time-ago__text"
+      ],
+      "salary": [
+        ".job-details-jobs-unified-top-card__job-insight:has-text('$')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('USD')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('VND')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('₫')",
+        ".compensation__salary"
+      ],
+      "sector": [
+        ".jobs-company .t-14.mt5",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('employees')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('nhân viên')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('industry')",
+        ".job-details-jobs-unified-top-card__job-insight:has-text('ngành')"
+      ],
+      "job_insights": [
+        ".job-details-fit-level-preferences button",
+        ".jobs-company .t-14.mt5",
+        ".job-details-jobs-unified-top-card__job-insight"
+      ]
+    }
+  },
+  "vnworks": {
+    "harvester": {
+      "job_list_item": ".job-item",
+      "job_link": "a.job-link",
+      "next_page": ".pagination .next a"
+    },
+    "extractor": {
+      "title": "h1.job-title",
+      "company_name": ".company-name",
+      "company_url": ".company-name a",
+      "contract_type": ".job-info-item:has-text('Loại công việc') .value",
+      "deadline": ".deadline-date",
+      "description": ".job-description",
+      "experience_level": ".job-info-item:has-text('Kinh nghiệm') .value",
+      "location": ".job-info-item:has-text('Địa điểm') .value",
+      "posted_time": ".posted-date",
+      "salary": ".job-info-item:has-text('Mức lương') .value",
+      "sector": ".job-info-item:has-text('Ngành nghề') .value"
+    }
+  }
+}

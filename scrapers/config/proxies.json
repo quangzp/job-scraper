@@ -1,0 +1,15 @@
+{
+  "enabled": false,
+  "global": {
+    "proxy_urls": 
+    []
+  },
+  "domains": {
+    "topcv": {
+      "proxy_urls": []
+    },
+    "vnworks": {
+      "proxy_urls": []
+    }
+  }
+}
