@@ -1,5 +1,4 @@
 import hashlib
-import json
 import logging
 import os
 import random
@@ -13,6 +12,7 @@ from crawlee.crawlers import PlaywrightCrawlingContext
 from django.db import transaction
 
 from app_dashboard.models import JobDetail, JobLink, Keyword
+from scrapers.config.selector_loader import load_domain_selectors
 from .base import BaseHarvester, _env_int
 
 logger = logging.getLogger(__name__)
@@ -82,10 +82,7 @@ class LinkedInHarvester(BaseHarvester):
         return _env_int('HARVEST_LINKEDIN_MAX_REQUEST_RETRIES', 0)
 
     def _load_selector_config(self) -> tuple[dict[str, Any], dict[str, Any]]:
-        config_path = Path(__file__).resolve().parent.parent / 'config' / 'selectors.json'
-        with config_path.open('r', encoding='utf-8') as file:
-            data = json.load(file)
-        linkedin_config = data.get('linkedin', {})
+        linkedin_config = load_domain_selectors('linkedin')
         return linkedin_config.get('harvester', {}), linkedin_config.get('extractor', {})
 
     def _selector(self, name: str):
@@ -842,6 +839,10 @@ class LinkedInHarvester(BaseHarvester):
                 link.save(update_fields=[*set(update_fields), 'updated_at'])
 
     async def _process_current_job_cards(self, page, keyword_name: str) -> None:
+        if await self._has_selector_group(page, 'no_results'):
+            logger.info('LinkedIn no-results selector matched for keyword=%s at %s.', keyword_name, page.url)
+            return
+
         job_cards = await self._collect_current_job_cards(page)
         if not job_cards:
             logger.info('No LinkedIn job cards found for keyword=%s at %s.', keyword_name, page.url)

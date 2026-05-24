@@ -1,0 +1,96 @@
+{
+  "harvester": {
+    "job_list_item": ".job-item-search-result",
+    "job_link": "h3.title > a",
+    "next_page": "ul.pagination > li:nth-child(3) > a",
+    "no_results": "div.none-suitable-job.hidden-on-quick-view[style*=\"display: block\"]"
+  },
+  "extractor": {
+    "bs": {
+      "default": {
+        "title": "h1.job-detail__info--title",
+        "company_name": ".company-name-label",
+        "company_url": ".company-name-label a",
+        "contract_type": ".job-detail__body-right--box-general .box-general-group-info:-soup-contains(\"Hình thức làm việc\") .box-general-group-info-value",
+        "deadline": ".job-detail__info--deadline-date",
+        "description": ".job-description",
+        "experience_level": ".job-detail__info--section-content:-soup-contains(\"Kinh nghiệm\") .job-detail__info--section-content-value",
+        "location": ".job-detail__info--section-content:-soup-contains(\"Địa điểm\") .job-detail__info--section-content-value",
+        "posted_time": "",
+        "salary": ".job-detail__info--section-content:-soup-contains(\"Mức lương\") .job-detail__info--section-content-value",
+        "sector": ".job-tags__group:-soup-contains(\"Chuyên môn\") .job-tags__group-list-tag-scroll a"
+      },
+      "brand":[
+          {
+          "title": ".box-header h2.title",
+          "company_name": ".footer-info .footer-info-company-name",
+          "company_url": ".navbar-diamond-company-menu li:nth-child(3) > a",
+          "contract_type": ".box-job-info .box-info .box-item:-soup-contains(\"Hình thức làm việc\") span",
+          "deadline": ".box-header span.deadline",
+          "description": "div.box-info:has(> h2.title):has(.content-tab)",
+          "experience_level": ".box-job-info .box-info .box-item:-soup-contains(\"Kinh nghiệm\") span",
+          "location": ".box-address div",
+          "posted_time": ".box-header span.time",
+          "salary": ".box-job-info .box-info .box-item:-soup-contains(\"Mức lương\") span",
+          "sector": ".job-tags__group:-soup-contains(\"Chuyên môn\") .job-tags__group-list-tag-scroll a"
+        },
+          {
+          "title": ".premium-job-basic-information__content--title",
+          "company_name": "#company-name",
+          "company_url": "#company-name a",
+          "contract_type": ".premium-job-general-information__content .premium-job-general-information__content--row:-soup-contains(\"Hình thức làm việc\") .general-information-data__value",
+          "deadline": ".premium-job-general-information__content .premium-job-general-information__content--row:-soup-contains(\"Hạn nộp hồ sơ\") .general-information-data__value",
+          "description": ".premium-job-description > :not(:last-child)",
+          "experience_level": ".premium-job-basic-information__content .premium-job-basic-information__content--sections .basic-information-item:-soup-contains(\"Kinh nghiệm\") .basic-information-item__data--value",
+          "location": ".premium-job-basic-information__content .premium-job-basic-information__content--sections .basic-information-item:-soup-contains(\"Địa điểm\") .basic-information-item__data--value",
+          "posted_time": "",
+          "salary": ".premium-job-basic-information__content .premium-job-basic-information__content--sections .basic-information-item:-soup-contains(\"Mức lương\") .basic-information-item__data--value",
+          "sector": ".job-tags__group:-soup-contains(\"Chuyên môn\") .job-tags__group-list-tag-scroll a"
+        }
+      ]
+    },
+    "playwright": {
+      "default": {
+        "title": "h1.job-detail__info--title",
+        "company_name": ".company-name-label",
+        "company_url": ".company-name-label a",
+        "contract_type": ".job-detail__body-right--box-general .box-general-group-info:has-text('Hình thức làm việc') .box-general-group-info-value",
+        "deadline": ".job-detail__info--deadline-date",
+        "description": ".job-description",
+        "experience_level": ".job-detail__info--section-content:has-text('Kinh nghiệm') .job-detail__info--section-content-value",
+        "location": ".job-detail__info--section-content:has-text('Địa điểm') .job-detail__info--section-content-value",
+        "posted_time": "",
+        "salary": ".job-detail__info--section-content:has-text('Mức lương') .job-detail__info--section-content-value",
+        "sector": ".job-tags__group:has-text('Chuyên môn') .job-tags__group-list-tag-scroll a"
+      },
+      "brand": [
+        {
+          "title": ".box-header h2.title",
+          "company_name": ".footer-info .footer-info-company-name",
+          "company_url": ".navbar-diamond-company-menu li:nth-child(3) > a",
+          "contract_type": ".box-job-info .box-info .box-item:has-text('Hình thức làm việc') span",
+          "deadline": ".box-header span.deadline",
+          "description": "div.box-info:has(> h2.title):has(.content-tab)",
+          "experience_level": ".box-job-info .box-info .box-item:has-text('Kinh nghiệm') span",
+          "location": ".box-address div",
+          "posted_time": ".box-header span.time",
+          "salary": ".box-job-info .box-info .box-item:has-text('Mức lương') span",
+          "sector": ".job-tags__group:has-text('Chuyên môn') .job-tags__group-list-tag-scroll a"
+        },
+        {
+          "title": ".premium-job-basic-information__content--title",
+          "company_name": "#company-name",
+          "company_url": "#company-name a",
+          "contract_type": ".premium-job-general-information__content .premium-job-general-information__content--row:has-text('Hình thức làm việc') .general-information-data__value",
+          "deadline": ".premium-job-general-information__content .premium-job-general-information__content--row:has-text('Hạn nộp hồ sơ') .general-information-data__value",
+          "description": ".premium-job-description > :not(:last-child)",
+          "experience_level": ".premium-job-basic-information__content .premium-job-basic-information__content--sections .basic-information-item:has-text('Kinh nghiệm') .basic-information-item__data--value",
+          "location": ".premium-job-basic-information__content .premium-job-basic-information__content--sections .basic-information-item:has-text('Địa điểm') .basic-information-item__data--value",
+          "posted_time": "",
+          "salary": ".premium-job-basic-information__content .premium-job-basic-information__content--sections .basic-information-item:has-text('Mức lương') .basic-information-item__data--value",
+          "sector": ".job-tags__group:has-text('Chuyên môn') .job-tags__group-list-tag-scroll a"
+        }
+      ]
+    }
+  }
+}

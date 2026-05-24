@@ -25,7 +25,8 @@ job_platform/                # Thư mục gốc của toàn bộ dự án
     ├── run_worker.py        # [QUAN TRỌNG] File cầu nối có chứa `django.setup()` để gọi ORM
     │
     ├── config/              
-    │   └── selectors.json   # Nơi chứa MỌI XPath/CSS của 5 domain (Không hardcode vào script)
+    │   ├── selector_loader.py # Loader đọc selector theo từng domain
+    │   └── selectors/        # Mỗi domain một file JSON selector riêng
     │
     ├── utils/               
     │   ├── text_cleaner.py  # Chứa hàm Regex: Xóa HTML tag, bóc tách số tiền lương, format ngày
@@ -38,5 +39,5 @@ job_platform/                # Thư mục gốc của toàn bộ dự án
     │
     └── extractors/          # PHASE 2: Bóc data (Lấy link PENDING từ DB -> Cào -> Lưu JobDetail)
         ├── base.py          # Class BaseExtractor chứa logic khóa dòng DB, update status
-        ├── topcv.py         # PlaywrightCrawler kết hợp selectors.json bóc JD TopCV
-        └── vnworks.py       # PlaywrightCrawler kết hợp selectors.json bóc JD VNWorks
+        ├── topcv.py         # PlaywrightCrawler kết hợp selector theo domain bóc JD TopCV
+        └── vnworks.py       # PlaywrightCrawler kết hợp selector theo domain bóc JD VNWorks

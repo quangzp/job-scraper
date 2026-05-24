@@ -1,96 +1,261 @@
-import json
 import logging
-import os
-from typing import Dict, Any
+from typing import Any, Dict
+from urllib.parse import urljoin, urlsplit
 
+from bs4 import BeautifulSoup
 from crawlee.crawlers import PlaywrightCrawlingContext
+
+from scrapers.config.selector_loader import load_domain_selectors
 from .base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
+
 class TopCVExtractor(BaseExtractor):
     def __init__(self, max_requests_per_crawl: int = 50, domain_config=None):
         super().__init__(domain='topcv', max_requests_per_crawl=max_requests_per_crawl, domain_config=domain_config)
-        self.selectors = self._load_selectors()
+        extractor_config = self._load_selector_config()
+        self.bs_selectors = extractor_config.get('bs', {}) if isinstance(extractor_config.get('bs'), dict) else {}
+        self.playwright_selectors = (
+            extractor_config.get('playwright', {}) if isinstance(extractor_config.get('playwright'), dict) else {}
+        )
 
-    def _load_selectors(self) -> dict:
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'selectors.json')
-        with open(config_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data.get('topcv', {}).get('extractor', {})
+        if not self.bs_selectors and not self.playwright_selectors:
+            self.playwright_selectors = extractor_config
 
-    async def _extract_text(self, page, selector: str) -> str:
-        """Helper để lấy text từ một selector, trả về rỗng nếu không có."""
+        self.selectors = self.playwright_selectors
+
+    def _load_selector_config(self) -> dict:
+        return load_domain_selectors('topcv').get('extractor', {})
+
+    def _is_brand_url(self, url: str) -> bool:
+        return '/brand/' in urlsplit(url).path
+
+    def _selector_candidates(self, selector_config: dict[str, Any], url: str) -> list[dict[str, Any]]:
+        if not selector_config:
+            return []
+
+        has_typed_groups = any(name in selector_config for name in ('default', 'brand'))
+        if not has_typed_groups:
+            return [selector_config]
+
+        group_name = 'brand' if self._is_brand_url(url) else 'default'
+        candidates = self._normalize_selector_candidates(selector_config.get(group_name))
+        if candidates:
+            return candidates
+
+        return self._normalize_selector_candidates(selector_config.get('default'))
+
+    def _normalize_selector_candidates(self, selector_group: Any) -> list[dict[str, Any]]:
+        if isinstance(selector_group, dict):
+            return [selector_group]
+        if isinstance(selector_group, list):
+            return [item for item in selector_group if isinstance(item, dict)]
+        return []
+
+    def _selector_group(self, selector_config: dict[str, Any], url: str) -> dict[str, Any]:
+        candidates = self._selector_candidates(selector_config, url)
+        return candidates[0] if candidates else {}
+
+    def _selector_list(self, selector: Any) -> list[str]:
         if not selector:
-            return ""
-        try:
-            loc = page.locator(selector)
-            if await loc.count() > 0:
-                text = await loc.first.inner_text()
-                return text.strip()
-        except Exception as e:
-            logger.debug(f"Lỗi khi lấy dữ liệu selector {selector}: {e}")
-        return ""
+            return []
+        if isinstance(selector, list):
+            return [item for item in selector if item]
+        return [selector]
 
-    async def _extract_multi_text(self, page, selector: str, separator: str = ', ') -> str:
-        """Helper để lấy text từ nhiều element của một selector, nối lại bằng separator."""
+    async def _extract_text(self, page, selector: Any) -> str:
         if not selector:
-            return ""
-        try:
-            loc = page.locator(selector)
-            count = await loc.count()
-            if count > 0:
-                texts = []
-                for i in range(count):
-                    text = await loc.nth(i).inner_text()
+            return ''
+        for item in self._selector_list(selector):
+            try:
+                loc = page.locator(item)
+                if await loc.count() > 0:
+                    text = await loc.first.inner_text()
+                    return text.strip()
+            except Exception as e:
+                logger.debug(f'Error extracting text with Playwright selector {item}: {e}')
+        return ''
+
+    async def _extract_href(self, page, selector: Any) -> str:
+        if not selector:
+            return ''
+        for item in self._selector_list(selector):
+            try:
+                loc = page.locator(item)
+                if await loc.count() > 0:
+                    href = await loc.first.get_attribute('href')
+                    if href:
+                        return urljoin(page.url, href)
+            except Exception as e:
+                logger.debug(f'Error extracting href with Playwright selector {item}: {e}')
+        return ''
+
+    async def _extract_multi_text(self, page, selector: Any, separator: str = ', ') -> str:
+        if not selector:
+            return ''
+        texts = []
+        for item in self._selector_list(selector):
+            try:
+                loc = page.locator(item)
+                count = await loc.count()
+                for index in range(count):
+                    text = await loc.nth(index).inner_text()
                     if text.strip():
                         texts.append(text.strip())
-                return separator.join(texts)
-        except Exception as e:
-            logger.debug(f"Lỗi khi lấy dữ liệu multi selector {selector}: {e}")
-        return ""
+            except Exception as e:
+                logger.debug(f'Error extracting multi text with Playwright selector {item}: {e}')
+        return separator.join(texts)
+
+    def _extract_text_from_soup(self, soup: BeautifulSoup, selector: Any) -> str:
+        if not selector:
+            return ''
+        for item in self._selector_list(selector):
+            try:
+                element = soup.select_one(item)
+            except Exception as e:
+                logger.debug(f'Error selecting raw HTML text with selector {item}: {e}')
+                continue
+            if element:
+                text = element.get_text(' ', strip=True)
+                if text:
+                    return text
+        return ''
+
+    def _extract_href_from_soup(self, soup: BeautifulSoup, selector: Any, base_url: str) -> str:
+        if not selector:
+            return ''
+        for item in self._selector_list(selector):
+            try:
+                element = soup.select_one(item)
+            except Exception as e:
+                logger.debug(f'Error selecting raw HTML href with selector {item}: {e}')
+                continue
+            if element and element.get('href'):
+                return urljoin(base_url, str(element.get('href')))
+        return ''
+
+    def _extract_multi_text_from_soup(self, soup: BeautifulSoup, selector: Any, separator: str = ', ') -> str:
+        if not selector:
+            return ''
+        texts = []
+        for item in self._selector_list(selector):
+            try:
+                elements = soup.select(item)
+            except Exception as e:
+                logger.debug(f'Error selecting raw HTML multi text with selector {item}: {e}')
+                continue
+            for element in elements:
+                text = element.get_text(' ', strip=True)
+                if text:
+                    texts.append(text)
+        return separator.join(texts)
+
+    async def try_process_raw_html(self, context: PlaywrightCrawlingContext) -> bool:
+        link_id = context.request.user_data.get('link_id')
+        if not link_id or not self.bs_selectors:
+            return False
+
+        selector_candidates = self._selector_candidates(self.bs_selectors, context.request.url)
+        if not selector_candidates:
+            logger.warning('Missing TopCV raw HTML title selector; falling back to Playwright.')
+            return False
+
+        response = await context.page.context.request.get(context.request.url, timeout=15000)
+        content_type = response.headers.get('content-type', '')
+        if response.status < 200 or response.status >= 300:
+            logger.info(f'TopCV raw HTML request returned status={response.status}; falling back to Playwright.')
+            return False
+        if content_type and 'text/html' not in content_type.lower():
+            logger.info(f'TopCV raw HTML request returned content-type={content_type}; falling back to Playwright.')
+            return False
+
+        html = await response.text()
+        soup = BeautifulSoup(html, 'lxml')
+        selectors = {}
+        title = ''
+        for candidate in selector_candidates:
+            candidate_title = self._extract_text_from_soup(soup, candidate.get('title', ''))
+            if candidate_title:
+                selectors = candidate
+                title = candidate_title
+                break
+
+        if not title:
+            logger.info(f'TopCV raw HTML title not found for {context.request.url}; falling back to Playwright.')
+            return False
+
+        data: Dict[str, Any] = {
+            'title': title,
+            'company_name': self._extract_text_from_soup(soup, selectors.get('company_name', '')),
+            'company_url': self._extract_href_from_soup(soup, selectors.get('company_url', ''), context.request.url),
+            'contract_type': self._extract_text_from_soup(soup, selectors.get('contract_type', '')),
+            'deadline': self._extract_text_from_soup(soup, selectors.get('deadline', '')),
+            'description': self._extract_text_from_soup(soup, selectors.get('description', '')),
+            'experience_level': self._extract_text_from_soup(soup, selectors.get('experience_level', '')),
+            'location': self._extract_text_from_soup(soup, selectors.get('location', '')),
+            'posted_time': self._extract_text_from_soup(soup, selectors.get('posted_time', '')),
+            'salary': self._extract_text_from_soup(soup, selectors.get('salary', '')),
+            'sector': self._extract_multi_text_from_soup(soup, selectors.get('sector', '')),
+        }
+
+        await self.save_job_detail(link_id, data, is_success=True)
+        logger.info(f'TopCV raw HTML extraction succeeded: {context.request.url}')
+        return True
 
     async def process_page(self, context: PlaywrightCrawlingContext) -> None:
-        """
-        Bóc tách chi tiết công việc từ trang Job Detail của TopCV.
-        """
         page = context.page
         request = context.request
         link_id = request.user_data.get('link_id')
-        
+
         if not link_id:
-            logger.error("Không tìm thấy link_id trong request. Bỏ qua.")
+            logger.error('Missing link_id in request. Skipping.')
             return
-            
-        logger.info(f"Đang trích xuất dữ liệu từ: {request.url}")
+
+        logger.info(f'Extracting TopCV data with Playwright fallback: {request.url}')
 
         try:
-            # Đợi cho trang load tương đối (chờ tiêu đề xuất hiện)
-            title_sel = self.selectors.get('title', '')
-            if not title_sel:
-                logger.error("Thiếu cấu hình selector cho title.")
+            selector_candidates = self._selector_candidates(self.playwright_selectors, request.url)
+            if not selector_candidates:
+                logger.error('Missing TopCV Playwright title selector.')
                 await self.save_job_detail(link_id, {}, is_success=False)
                 return
-                
-            await page.wait_for_selector(title_sel, timeout=10000)
-            
+
+            selectors = {}
+            title = ''
+            for candidate in selector_candidates:
+                title_sel = candidate.get('title', '')
+                if not title_sel:
+                    continue
+                try:
+                    await page.wait_for_selector(title_sel, timeout=10000)
+                    title = await self._extract_text(page, title_sel)
+                    if title:
+                        selectors = candidate
+                        break
+                except Exception as e:
+                    logger.debug(f'TopCV Playwright title selector failed: {title_sel}: {e}')
+
+            if not title:
+                logger.error('TopCV Playwright fallback did not find a title.')
+                await self.save_job_detail(link_id, {}, is_success=False)
+                return
+
             data: Dict[str, Any] = {
-                'title': await self._extract_text(page, title_sel),
-                'company_name': await self._extract_text(page, self.selectors.get('company_name', '')),
-                'company_url': await self._extract_text(page, self.selectors.get('company_url', '')),
-                'contract_type': await self._extract_text(page, self.selectors.get('contract_type', '')),
-                'deadline': await self._extract_text(page, self.selectors.get('deadline', '')),
-                'description': await self._extract_text(page, self.selectors.get('description', '')),
-                'experience_level': await self._extract_text(page, self.selectors.get('experience_level', '')),
-                'location': await self._extract_text(page, self.selectors.get('location', '')),
-                'posted_time': await self._extract_text(page, self.selectors.get('posted_time', '')),
-                'salary': await self._extract_text(page, self.selectors.get('salary', '')),
-                'sector': await self._extract_multi_text(page, self.selectors.get('sector', ''))
+                'title': title,
+                'company_name': await self._extract_text(page, selectors.get('company_name', '')),
+                'company_url': await self._extract_href(page, selectors.get('company_url', '')),
+                'contract_type': await self._extract_text(page, selectors.get('contract_type', '')),
+                'deadline': await self._extract_text(page, selectors.get('deadline', '')),
+                'description': await self._extract_text(page, selectors.get('description', '')),
+                'experience_level': await self._extract_text(page, selectors.get('experience_level', '')),
+                'location': await self._extract_text(page, selectors.get('location', '')),
+                'posted_time': await self._extract_text(page, selectors.get('posted_time', '')),
+                'salary': await self._extract_text(page, selectors.get('salary', '')),
+                'sector': await self._extract_multi_text(page, selectors.get('sector', '')),
             }
-            
-            # Lưu thành công
+
             await self.save_job_detail(link_id, data, is_success=True)
-            
         except Exception as e:
-            logger.error(f"Lỗi khi trích xuất dữ liệu {request.url}: {e}")
+            logger.error(f'Error extracting TopCV data from {request.url}: {e}')
             await self.save_job_detail(link_id, {}, is_success=False)

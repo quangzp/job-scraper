@@ -37,6 +37,7 @@ class BaseHarvester(abc.ABC):
         self.domain_config = domain_config or self._load_domain_config_safely()
         self.max_requests_per_crawl = max_requests_per_crawl
         self.max_pages_per_keyword = self._get_domain_int('max_pages_per_keyword', 5)
+        self.max_jobs_per_keyword = self._get_domain_int('max_jobs_per_keyword', 100)
         self.request_delay_min_seconds = self._get_domain_int('request_delay_min_seconds', 1)
         self.request_delay_max_seconds = max(
             self.request_delay_min_seconds,
@@ -151,7 +152,14 @@ class BaseHarvester(abc.ABC):
                 logger.warning(f"Timeout waiting for page load at {context.request.url}; continuing.")
 
             await asyncio.sleep(random.uniform(self.request_delay_min_seconds, self.request_delay_max_seconds))
-            await self._simulate_human_behavior(context.page)
+            try:
+                await self._simulate_human_behavior(context.page)
+            except Exception as exc:
+                logger.warning(
+                    'Human-like scroll failed for %s; continuing to process page: %s',
+                    context.request.url,
+                    exc,
+                )
             await self.process_page(context)
 
         @crawler.error_handler
@@ -204,6 +212,24 @@ class BaseHarvester(abc.ABC):
         """)
         await asyncio.sleep(random.uniform(1, 2))
 
+    def selector_values(self, selector) -> list[str]:
+        if not selector:
+            return []
+        if isinstance(selector, list):
+            return [item for item in selector if item]
+        return [selector]
+
+    async def has_no_results(self, page, selectors=None) -> bool:
+        selectors = selectors if selectors is not None else getattr(self, 'selectors', {}).get('no_results', '')
+        for selector in self.selector_values(selectors):
+            try:
+                if await page.locator(selector).count() > 0:
+                    logger.info('No-results selector matched for domain=%s selector=%s', self.domain, selector)
+                    return True
+            except Exception as exc:
+                logger.debug('No-results selector failed for domain=%s selector=%s: %s', self.domain, selector, exc)
+        return False
+
     @abc.abstractmethod
     async def process_page(self, context: PlaywrightCrawlingContext) -> None:
         """Extract job URLs from a list page."""
@@ -215,15 +241,24 @@ class BaseHarvester(abc.ABC):
         pass
 
     def should_enqueue_next_page(self, request) -> bool:
-        current_page = int(request.user_data.get('page_number', 1) or 1)
-        if current_page >= self.max_pages_per_keyword:
+        return not self.is_job_limit_reached(request)
+
+    def saved_count_from_request(self, request) -> int:
+        try:
+            return int(request.user_data.get('saved_count', 0) or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    def is_job_limit_reached(self, request, saved_count: int | None = None) -> bool:
+        saved_count = self.saved_count_from_request(request) if saved_count is None else saved_count
+        if saved_count >= self.max_jobs_per_keyword:
             logger.info(
-                'Reached max_pages_per_keyword=%s for %s. Stop pagination.',
-                self.max_pages_per_keyword,
+                'Reached max_jobs_per_keyword=%s for %s. Stop pagination.',
+                self.max_jobs_per_keyword,
                 request.url,
             )
-            return False
-        return True
+            return True
+        return False
 
     def next_page_user_data(self, request, **extra):
         user_data = dict(request.user_data or {})
@@ -258,6 +293,14 @@ class BaseHarvester(abc.ABC):
         except Exception as e:
             logger.error(f"Error saving job link {url}: {e}")
             return False
+
+    async def save_job_links_for_page(self, urls: List[str], keyword: Keyword) -> int:
+        """Save all new job URLs discovered on the current page."""
+        saved_count = 0
+        for url in urls:
+            if await self.save_job_link(url, keyword):
+                saved_count += 1
+        return saved_count
 
     async def harvest(self, keyword_name: str) -> None:
         """Run the harvester for one keyword."""

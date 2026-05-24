@@ -33,7 +33,7 @@ When generating code, modifying existing files, or suggesting architectures, you
 
 1. NO SQLALCHEMY: The project uses Django ORM for everything. Do not import or suggest SQLAlchemy.
 2. DJANGO SETUP IN SCRIPTS: Any standalone script in scrapers/ MUST include django.setup() before importing models.
-3. NO HARDCODED SELECTORS: NEVER hardcode XPath or CSS Selectors inside Python scripts. Always read them from scrapers/config/selectors.json.
+3. NO HARDCODED SELECTORS: NEVER hardcode XPath or CSS Selectors inside Python scripts. Always read them from the per-domain files in scrapers/config/selectors/ via scrapers/config/selector_loader.py.
 4. K.I.S.S (Rule-based NLP): Do not suggest heavy AI/LLM models for text extraction unless explicitly asked. Use Regex and string mapping in scrapers/utils/.
 5. CONCURRENCY SAFE: When updating database records in extractors, always assume multiple workers are running. Use atomic transactions and row locks.
 6. CRAWLEE USAGE: Utilize Crawlee's built-in RequestQueue, ProxyConfiguration, and Router. Do not reinvent the wheel with pure Playwright or standard requests if Crawlee has a built-in feature.

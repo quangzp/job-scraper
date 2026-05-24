@@ -1,6 +1,4 @@
-import json
 import logging
-import os
 from typing import List
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
@@ -9,7 +7,7 @@ from crawlee import Request
 from crawlee.crawlers import PlaywrightCrawlingContext
 from asgiref.sync import sync_to_async
 
-from scrapers.utils.text_cleaner import remove_query_and_fragment
+from scrapers.config.selector_loader import load_domain_selectors
 
 from app_dashboard.models import Keyword
 from .base import BaseHarvester
@@ -22,10 +20,7 @@ class TopCVHarvester(BaseHarvester):
         self.selectors = self._load_selectors()
 
     def _load_selectors(self) -> dict:
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'selectors.json')
-        with open(config_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data.get('topcv', {}).get('harvester', {})
+        return load_domain_selectors('topcv').get('harvester', {})
 
     async def get_initial_requests(self, keyword: Keyword) -> List[str]:
         """
@@ -47,11 +42,16 @@ class TopCVHarvester(BaseHarvester):
         item_sel = self.selectors.get('job_list_item', '')
         link_sel = self.selectors.get('job_link', '')
         next_sel = self.selectors.get('next_page', '')
+        no_results_sel = self.selectors.get('no_results', '')
 
         if not item_sel or not link_sel:
             logger.error(f"Thiếu cấu hình selector job_list_item hoặc job_link cho {self.domain}.")
             return
         # print(f"next_sel: {next_sel}")
+
+        if await self.has_no_results(page, no_results_sel):
+            logger.info(f"Không có kết quả TopCV cho trang: {request.url}")
+            return
 
         # Đợi các item xuất hiện
         try:
@@ -66,22 +66,28 @@ class TopCVHarvester(BaseHarvester):
         )
         
         # Làm sạch và lọc các URL đã tồn tại trong DB
-        clean_links = [remove_query_and_fragment(urljoin(request.url, link)) for link in job_links]
+        clean_links = [urljoin(request.url, link) for link in job_links]
         new_links = await self.filter_existing_links(clean_links)
-        
-        if not new_links:
-            logger.info(f"Tất cả link trên trang {request.url} đều đã tồn tại. Dừng phân trang.")
-            return
 
         # Lưu vào DB
         keyword_name = request.user_data.get('keyword_name')
-        if keyword_name:
+        total_saved_count = self.saved_count_from_request(request)
+        if new_links and keyword_name:
             keyword = await sync_to_async(Keyword.objects.get)(name=keyword_name)
-            for clean_link in new_links:
-                if '/brand/' in clean_link:
-                    logger.info(f"Bỏ qua link thương hiệu: {clean_link}")
-                    continue
-                await self.save_job_link(clean_link, keyword)
+            saved_now = await self.save_job_links_for_page(new_links, keyword)
+            total_saved_count += saved_now
+            logger.info(
+                "TopCV saved %s new links on %s. Harvest saved_count=%s/%s.",
+                saved_now,
+                request.url,
+                total_saved_count,
+                self.max_jobs_per_keyword,
+            )
+        elif not new_links:
+            logger.info(f"Tất cả link trên trang {request.url} đều đã tồn tại. Vẫn kiểm tra phân trang.")
+
+        if self.is_job_limit_reached(request, total_saved_count):
+            return
         
         # Xử lý Next Page: Vì TopCV dùng data-href thay vì href, ta phải lấy thủ công
         if next_sel and self.should_enqueue_next_page(request):
@@ -100,7 +106,11 @@ class TopCVHarvester(BaseHarvester):
                         Request.from_url(
                             url=abs_next_link,
                             label='LIST_PAGE',
-                            user_data=self.next_page_user_data(request, keyword_name=keyword_name),
+                            user_data=self.next_page_user_data(
+                                request,
+                                keyword_name=keyword_name,
+                                saved_count=total_saved_count,
+                            ),
                         )
                     ])
         

@@ -1,0 +1,81 @@
+{
+  "harvester": {
+    "job_list_item": ".search_list.view_job_item",
+    "job_link": "h2 a",
+    "next_page": "ul.pagination button.clickable",
+    "no_results": ".noResultWrapper"
+  },
+  "extractor": {
+    "expand_buttons": [
+      "button[aria-label=\"Xem đầy đủ mô tả công việc\"]",
+      "button[aria-label=\"Xem thêm\"]"
+    ],
+    "title": {
+      "type": "text",
+      "selector": "h1[name=\"title\"]"
+    },
+    "company_name": {
+      "type": "text",
+      "selector": [
+        "a[href*=\"/nha-tuyen-dung/\"][href*=\"fromPage=jobDetail\"]",
+        "a[href*=\"/nha-tuyen-dung/\"]"
+      ]
+    },
+    "company_url": {
+      "type": "href",
+      "selector": [
+        "a[href*=\"/nha-tuyen-dung/\"][href*=\"fromPage=jobDetail\"]",
+        "a[href*=\"/nha-tuyen-dung/\"]"
+      ]
+    },
+    "contract_type": {
+      "type": "label",
+      "label": "LOẠI HÌNH LÀM VIỆC",
+      "label_selector": "label[name=\"label\"]",
+      "value_selector": "p[name=\"paragraph\"]"
+    },
+    "deadline": {
+      "type": "text",
+      "selector": "span[name=\"paragraph\"]:has-text(\"Hết hạn\")"
+    },
+    "description": {
+      "type": "sections",
+      "headings": [
+        "Mô tả công việc",
+        "Yêu cầu công việc"
+      ],
+      "heading_selector": "h2",
+      "content_selector": "p",
+      "separator": "\n\n"
+    },
+    "experience_level": {
+      "type": "label",
+      "label": "CẤP BẬC",
+      "label_selector": "label[name=\"label\"]",
+      "value_selector": "p[name=\"paragraph\"]"
+    },
+    "location": {
+      "type": "section",
+      "heading": "Địa điểm làm việc",
+      "heading_selector": "h2",
+      "value_selector": "p[name=\"paragraph\"]",
+      "separator": ", "
+    },
+    "posted_time": {
+      "type": "label",
+      "label": "NGÀY ĐĂNG",
+      "label_selector": "label[name=\"label\"]",
+      "value_selector": "p[name=\"paragraph\"]"
+    },
+    "salary": {
+      "type": "text",
+      "selector": "span[name=\"label\"][color=\"#FF7D55\"]"
+    },
+    "sector": {
+      "type": "label",
+      "label": "NGÀNH NGHỀ",
+      "label_selector": "label[name=\"label\"]",
+      "value_selector": "p[name=\"paragraph\"]"
+    }
+  }
+}

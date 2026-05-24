@@ -104,6 +104,14 @@ class BaseExtractor(abc.ABC):
         async def request_handler(context: PlaywrightCrawlingContext) -> None:
             try:
                 try:
+                    if await self.try_process_raw_html(context):
+                        return
+                except Exception as e:
+                    logger.warning(
+                        f"Raw HTML extraction failed for {context.request.url}; falling back to Playwright: {e}"
+                    )
+
+                try:
                     await context.page.wait_for_load_state('domcontentloaded', timeout=15000)
                 except Exception:
                     logger.warning(f"Timeout waiting for page load at {context.request.url}; continuing.")
@@ -157,6 +165,10 @@ class BaseExtractor(abc.ABC):
     async def process_page(self, context: PlaywrightCrawlingContext) -> None:
         """Extractor-specific detail page parsing."""
         pass
+
+    async def try_process_raw_html(self, context: PlaywrightCrawlingContext) -> bool:
+        """Optionally process a page from its raw HTML before rendered fallback."""
+        return False
 
     @sync_to_async
     def fetch_pending_links(self, batch_size: int = 10) -> List[JobLink]:
