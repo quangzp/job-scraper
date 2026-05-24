@@ -181,7 +181,7 @@ class BaseExtractor(abc.ABC):
             links = list(
                 JobLink.objects.select_for_update(skip_locked=True)
                 .filter(
-                    Q(status='PENDING') | Q(status='FAILED', tried_count__lt=10, updated_at__lte=retry_after),
+                    Q(status='PENDING') | Q(status='FAILED', tried_count__lt=3, updated_at__lte=retry_after),
                     domain=self.domain,
                 )[:batch_size]
             )

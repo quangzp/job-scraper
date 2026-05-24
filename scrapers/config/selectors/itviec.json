@@ -1,0 +1,136 @@
+{
+  "harvester": {
+    "search_url_template": "https://itviec.com/it-jobs/{query}",
+    "job_list_item": ".card-jobs-list .job-card",
+    "job_link": "h3[data-url]",
+    "next_page": ".ipagination .page.next a",
+    "no_results": ".card-jobs-list:not(:has(.job-card))"
+  },
+  "extractor": {
+    "playwright": {
+      "title": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "text",
+            "selector": ".job-show-header h1"
+          },
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "title"
+          }
+        ]
+      },
+      "company_name": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "text",
+            "selector": ".job-show-header .employer-name"
+          },
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "hiringOrganization.name"
+          }
+        ]
+      },
+      "company_url": {
+        "type": "href",
+        "selector": ".job-show-employer-info h3 a"
+      },
+      "contract_type": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "employmentType"
+      },
+      "deadline": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "validThrough"
+      },
+      "description": {
+        "type": "text",
+        "selector": ".job-content"
+      },
+      "experience_level": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "experienceRequirements.monthsOfExperience",
+        "template": "{value} months"
+      },
+      "location": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "text",
+            "selector": ".job-show-info .d-inline-block:has(use[href$=\"#map-pin\"]) span.normal-text"
+          },
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "paths": [
+              "jobLocation.0.address.streetAddress",
+              "jobLocation.0.address.addressLocality",
+              "jobLocation.0.address.addressRegion"
+            ],
+            "separator": ", "
+          }
+        ]
+      },
+      "posted_time": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "datePosted"
+          },
+          {
+            "type": "text",
+            "selector": ".job-show-info .preview-header-item:has(use[href$=\"#clock\"]) span.normal-text"
+          }
+        ]
+      },
+      "salary": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "baseSalary.value.value"
+          },
+          {
+            "type": "text",
+            "selector": ".job-show-header .salary"
+          }
+        ]
+      },
+      "sector": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "skills"
+          },
+          {
+            "type": "multi_text",
+            "selector": ".job-show-info a.itag, .job-show-info .itag.bg-light-grey",
+            "separator": ", "
+          }
+        ]
+      }
+    }
+  }
+}
