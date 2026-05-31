@@ -280,7 +280,7 @@ class BaseHarvester(abc.ABC):
             obj, created = JobLink.objects.get_or_create(
                 url=url,
                 defaults={
-                    'keyword': keyword,
+                    'keyword': keyword.name,
                     'domain': self.domain,
                     'status': 'PENDING',
                 },

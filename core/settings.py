@@ -75,8 +75,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
-USE_POSTGRES = env_bool('USE_POSTGRES', True)
-if USE_POSTGRES:
+DB_PROVIDER = os.getenv('DB_PROVIDER', 'postgres').strip().lower()
+
+if DB_PROVIDER == 'supabase':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('SUPABASE_DB_NAME', 'postgres'),
+            'USER': os.getenv('SUPABASE_DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('SUPABASE_DB_PASSWORD', ''),
+            'HOST': os.getenv('SUPABASE_DB_HOST', ''),
+            'PORT': os.getenv('SUPABASE_DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('SUPABASE_CONN_MAX_AGE', '0')),
+            'OPTIONS': {
+                'connect_timeout': int(os.getenv('SUPABASE_CONNECT_TIMEOUT', '10')),
+                'sslmode': os.getenv('SUPABASE_SSLMODE', 'require'),
+            },
+        }
+    }
+elif DB_PROVIDER == 'postgres':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -91,7 +108,7 @@ if USE_POSTGRES:
             },
         }
     }
-else:
+elif DB_PROVIDER == 'sqlite':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -101,6 +118,8 @@ else:
             },
         }
     }
+else:
+    raise ValueError(f"Unsupported DB_PROVIDER={DB_PROVIDER!r}. Use 'postgres', 'supabase', or 'sqlite'.")
 
 AUTH_PASSWORD_VALIDATORS = []
 

@@ -1,7 +1,8 @@
 from datetime import date
+from urllib.parse import urlsplit, urlunsplit
 
 from django.contrib import admin
-from .models import TargetDomain, Keyword, JobLink, JobDetail
+from .models import TargetDomain, Keyword, ProxyConfig, JobLink, JobDetail
 
 
 class DateRangeFilterAdmin(admin.ModelAdmin):
@@ -89,7 +90,7 @@ class TargetDomainAdmin(admin.ModelAdmin):
     )
     search_fields = ('name',)
 
-    @admin.display(description='Dia diem tim kiem')
+    @admin.display(description='Địa điểm tìm kiếm')
     def display_search_locations(self, obj):
         locations = obj.search_locations or []
         if isinstance(locations, list):
@@ -102,11 +103,32 @@ class KeywordAdmin(admin.ModelAdmin):
     list_editable = ('is_active',)
     search_fields = ('name',)
 
+@admin.register(ProxyConfig)
+class ProxyConfigAdmin(admin.ModelAdmin):
+    list_display = ('name', 'domain', 'display_proxy_url', 'is_active', 'priority', 'updated_at')
+    list_editable = ('is_active', 'priority')
+    list_filter = ('is_active', 'domain')
+    search_fields = ('name', 'proxy_url', 'domain__name')
+    autocomplete_fields = ('domain',)
+
+    @admin.display(description='Proxy URL')
+    def display_proxy_url(self, obj):
+        parts = urlsplit(obj.proxy_url)
+        if not parts.username and not parts.password:
+            return obj.proxy_url
+
+        host = parts.hostname or ''
+        if ':' in host and not host.startswith('['):
+            host = f'[{host}]'
+        port = f':{parts.port}' if parts.port else ''
+        netloc = f'***:***@{host}{port}'
+        return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+
 @admin.register(JobLink)
 class JobLinkAdmin(DateRangeFilterAdmin):
     list_display = ('url', 'domain', 'keyword', 'status', 'tried_count', 'created_at', 'updated_at')
     list_filter = ('status', 'domain', 'keyword')
-    search_fields = ('url',)
+    search_fields = ('url', 'keyword')
     date_field = 'created_at'
     change_list_template = 'admin/app_dashboard/joblink/change_list.html'
 
