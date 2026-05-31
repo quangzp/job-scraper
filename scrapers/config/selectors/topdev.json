@@ -1,0 +1,197 @@
+{
+  "harvester": {
+    "search_url_template": "https://topdev.vn/jobs/search?keyword={keyword}",
+    "job_list_item": "div.text-card-foreground.cursor-pointer:has(a[href^=\"/detail-jobs/\"])",
+    "job_link": "a[href^=\"/detail-jobs/\"]",
+    "next_page": "nav[aria-label=\"pagination\"] a",
+    "no_results": "div:has(> img[alt=\"empty\"]):has-text(\"NO MATCHING JOBS FOUND\")"
+  },
+  "extractor": {
+    "bs": {
+      "title": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "title"
+          },
+          {
+            "type": "text",
+            "selector": "a[href^=\"/detail-jobs/\"]"
+          }
+        ]
+      },
+      "company_name": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "hiringOrganization.name"
+      },
+      "company_url": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "hiringOrganization.sameAs"
+      },
+      "contract_type": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "employmentType"
+      },
+      "deadline": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "validThrough"
+      },
+      "description": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "text",
+            "selector": "div.border-text-200.text-text-200.rounded-xl.border.p-4"
+          },
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "description",
+            "format": "html_text"
+          }
+        ]
+      },
+      "experience_level": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "experienceRequirements.monthsOfExperience",
+        "template": "{value} months"
+      },
+      "location": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "paths": [
+          "jobLocation.address.streetAddress",
+          "jobLocation.address.addressLocality",
+          "jobLocation.address.addressRegion"
+        ],
+        "separator": ", "
+      },
+      "posted_time": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "datePosted"
+      },
+      "salary": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "baseSalary.value.value"
+      },
+      "sector": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "skills"
+      }
+    },
+    "playwright": {
+      "title": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "title"
+          },
+          {
+            "type": "text",
+            "selector": "a[href^=\"/detail-jobs/\"]"
+          }
+        ]
+      },
+      "company_name": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "hiringOrganization.name"
+      },
+      "company_url": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "hiringOrganization.sameAs"
+      },
+      "contract_type": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "employmentType"
+      },
+      "deadline": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "validThrough"
+      },
+      "description": {
+        "type": "first",
+        "candidates": [
+          {
+            "type": "text",
+            "selector": "div.border-text-200.text-text-200.rounded-xl.border.p-4"
+          },
+          {
+            "type": "json_ld",
+            "selector": "script[type=\"application/ld+json\"]",
+            "schema_type": "JobPosting",
+            "path": "description",
+            "format": "html_text"
+          }
+        ]
+      },
+      "experience_level": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "experienceRequirements.monthsOfExperience",
+        "template": "{value} months"
+      },
+      "location": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "paths": [
+          "jobLocation.address.streetAddress",
+          "jobLocation.address.addressLocality",
+          "jobLocation.address.addressRegion"
+        ],
+        "separator": ", "
+      },
+      "posted_time": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "datePosted"
+      },
+      "salary": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "baseSalary.value.value"
+      },
+      "sector": {
+        "type": "json_ld",
+        "selector": "script[type=\"application/ld+json\"]",
+        "schema_type": "JobPosting",
+        "path": "skills"
+      }
+    }
+  }
+}

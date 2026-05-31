@@ -7,59 +7,59 @@ class TargetDomain(models.Model):
     is_active = models.BooleanField(default=True, verbose_name="Trạng thái hoạt động")
     is_harvest_enabled = models.BooleanField(
         default=True,
-        verbose_name="Bat Harvester",
-        help_text="Cho phep domain nay thu thap link moi.",
+        verbose_name="Bật Harvester",
+        help_text="Cho phép domain này thu thập link mới.",
     )
     is_extract_enabled = models.BooleanField(
         default=True,
-        verbose_name="Bat Extractor",
-        help_text="Cho phep domain nay boc tach chi tiet job.",
+        verbose_name="Bật Extractor",
+        help_text="Cho phép domain này bóc tách chi tiết job.",
     )
     harvest_runs_per_day = models.PositiveIntegerField(
         default=1,
-        verbose_name="So lan chay Harvester/ngay",
-        help_text="So lan thu thap link moi trong 1 ngay cho domain nay.",
+        verbose_name="Số lần chạy Harvester/ngày",
+        help_text="Số lần thu thập link mới trong 1 ngày cho domain này.",
     )
     extract_runs_per_day = models.PositiveIntegerField(
         default=24,
-        verbose_name="So lan chay Extractor/ngay",
-        help_text="So lan boc tach chi tiet job trong 1 ngay cho domain nay.",
+        verbose_name="Số lần chạy Extractor/ngày",
+        help_text="Số lần bóc tách chi tiết job trong 1 ngày cho domain này.",
     )
     job_read_time_seconds = models.PositiveIntegerField(
         default=3,
-        verbose_name="Thoi gian doc job (giay)",
-        help_text="Thoi gian cho/gia lap doc trang job detail truoc khi extract.",
+        verbose_name="Thời gian đọc job (giây)",
+        help_text="Thời gian chờ/giả lập đọc trang job detail trước khi extract.",
     )
     max_pages_per_keyword = models.PositiveIntegerField(
         default=5,
-        verbose_name="So trang toi da/keyword",
-        help_text="Gioi han so trang danh sach viec lam duoc crawl cho moi keyword.",
+        verbose_name="Số trang tối đa/keyword",
+        help_text="Giới hạn số trang danh sách việc làm được crawl cho mỗi keyword.",
     )
     max_jobs_per_keyword = models.PositiveIntegerField(
         default=100,
-        verbose_name="So job toi da/keyword",
-        help_text="Gioi han tong so job URL duoc luu cho moi keyword trong mot vong harvest.",
+        verbose_name="Số job tối đa/keyword",
+        help_text="Giới hạn tổng số job URL được lưu cho mỗi keyword trong một vòng harvest.",
     )
     search_locations = models.JSONField(
         default=list,
         blank=True,
-        verbose_name="Dia diem tim kiem",
-        help_text='Danh sach location cho search, vi du: ["Vietnam", "Ho Chi Minh City, Vietnam"].',
+        verbose_name="Địa điểm tìm kiếm",
+        help_text='Danh sách location cho search, ví dụ: ["Vietnam", "Ho Chi Minh City, Vietnam"].',
     )
     extract_batch_size = models.PositiveIntegerField(
         default=3,
         verbose_name="Batch size Extractor",
-        help_text="So link PENDING toi da duoc lock va xu ly trong mot lan chay extractor.",
+        help_text="Số link PENDING tối đa được lock và xử lý trong một lần chạy extractor.",
     )
     request_delay_min_seconds = models.PositiveIntegerField(
         default=1,
-        verbose_name="Delay nho nhat/request (giay)",
-        help_text="Thoi gian cho ngau nhien toi thieu sau khi trang load.",
+        verbose_name="Delay nhỏ nhất/request (giây)",
+        help_text="Thời gian chờ ngẫu nhiên tối thiểu sau khi trang load.",
     )
     request_delay_max_seconds = models.PositiveIntegerField(
         default=3,
-        verbose_name="Delay lon nhat/request (giay)",
-        help_text="Thoi gian cho ngau nhien toi da sau khi trang load.",
+        verbose_name="Delay lớn nhất/request (giây)",
+        help_text="Thời gian chờ ngẫu nhiên tối đa sau khi trang load.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -78,6 +78,45 @@ class Keyword(models.Model):
         return self.name
 
 
+class ProxyConfig(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Tên proxy")
+    proxy_url = models.URLField(
+        max_length=1000,
+        verbose_name="Proxy URL",
+        help_text="Định dạng: http://user:pass@host:port hoặc https://user:pass@host:port.",
+    )
+    domain = models.ForeignKey(
+        TargetDomain,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        db_constraint=False,
+        related_name='proxy_configs',
+        verbose_name="Domain",
+        help_text="Để trống nếu proxy này dùng chung cho mọi domain.",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Trạng thái hoạt động")
+    priority = models.PositiveIntegerField(
+        default=100,
+        verbose_name="Độ ưu tiên",
+        help_text="Số nhỏ hơn được ưu tiên dùng trước.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        scope = self.domain.name if self.domain_id else 'global'
+        return f"{self.name} ({scope})"
+
+    class Meta:
+        ordering = ['priority', 'id']
+        indexes = [
+            models.Index(fields=['is_active', 'domain', 'priority']),
+        ]
+        verbose_name = "Proxy"
+        verbose_name_plural = "Proxies"
+
+
 class JobLink(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
@@ -87,13 +126,7 @@ class JobLink(models.Model):
     )
 
     url = models.URLField(max_length=1000, unique=True, verbose_name="URL Công việc")
-    keyword = models.ForeignKey(
-        Keyword,
-        on_delete=models.CASCADE,
-        db_constraint=False,
-        related_name='job_links',
-        verbose_name="Từ khóa",
-    )
+    keyword = models.CharField(max_length=255, verbose_name="Từ khóa")
     domain = models.CharField(max_length=100, verbose_name="Domain")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', verbose_name="Trạng thái")
     tried_count = models.IntegerField(default=0, verbose_name="Số lần thử")

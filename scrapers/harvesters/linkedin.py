@@ -793,19 +793,18 @@ class LinkedInHarvester(BaseHarvester):
         is_success: bool,
     ) -> None:
         with transaction.atomic():
-            keyword = Keyword.objects.get(name=keyword_name)
             link, _ = JobLink.objects.get_or_create(
                 url=url,
                 defaults={
-                    'keyword': keyword,
+                    'keyword': keyword_name,
                     'domain': self.domain,
                     'status': 'PENDING',
                 },
             )
 
             update_fields = []
-            if link.keyword_id != keyword.id:
-                link.keyword = keyword
+            if link.keyword != keyword_name:
+                link.keyword = keyword_name
                 update_fields.append('keyword')
             if link.domain != self.domain:
                 link.domain = self.domain
