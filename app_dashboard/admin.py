@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 
 from .models import TargetDomain, Keyword, ProxyConfig, JobLink, JobDetail
@@ -141,13 +142,22 @@ class ProxyConfigAdmin(ModelAdmin):
 
 @admin.register(JobLink)
 class JobLinkAdmin(DateRangeFilterAdmin):
-    list_display = ('url', 'domain', 'keyword', 'status', 'tried_count', 'created_at', 'updated_at')
+    list_display = ('display_url', 'domain', 'keyword', 'status', 'tried_count', 'created_at', 'updated_at')
     list_filter = ('status', 'domain', 'keyword')
     search_fields = ('url', 'keyword')
     date_field = 'created_at'
     search_placeholder = 'Tìm URL hoặc keyword...'
     date_filter_label = 'Ngày tạo'
     change_list_template = 'admin/app_dashboard/joblink/change_list.html'
+
+    @admin.display(description='URL Công việc', ordering='url')
+    def display_url(self, obj):
+        return format_html(
+            '<span title="{}" style="display:block; max-width:200px; overflow:hidden; '
+            'text-overflow:ellipsis; white-space:nowrap;">{}</span>',
+            obj.url,
+            obj.url,
+        )
 
 @admin.register(JobDetail)
 class JobDetailAdmin(DateRangeFilterAdmin):

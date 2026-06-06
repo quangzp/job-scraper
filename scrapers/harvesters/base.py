@@ -107,7 +107,7 @@ class BaseHarvester(abc.ABC):
         browser_new_context_options = self._get_browser_new_context_options()
         session_crawler_options = self._get_single_session_crawler_options()
         browser_pool = build_browser_pool(
-            headless=False,
+            headless=True,
             browser_new_context_options=browser_new_context_options,
         )
         if browser_pool:
