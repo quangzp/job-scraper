@@ -209,14 +209,9 @@
       ".compensation__salary"
     ],
     "sector": [
-      ".jobs-company .t-14.mt5",
-      ".job-details-jobs-unified-top-card__job-insight:has-text('employees')",
-      ".job-details-jobs-unified-top-card__job-insight:has-text('nhân viên')",
-      ".job-details-jobs-unified-top-card__job-insight:has-text('industry')",
-      ".job-details-jobs-unified-top-card__job-insight:has-text('ngành')"
+      ".jobs-company .t-14.mt5"
     ],
     "job_insights": [
-      ".job-details-fit-level-preferences button",
       ".jobs-company .t-14.mt5",
       ".job-details-jobs-unified-top-card__job-insight"
     ]

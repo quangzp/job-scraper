@@ -1,28 +1,65 @@
 {% load i18n %}
 {% if cl.search_fields %}
+<style>
+  #toolbar .dashboard-filter-toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    padding: 10px 0;
+  }
+
+  #toolbar .dashboard-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  #toolbar .dashboard-filter-field label {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  #toolbar .dashboard-filter-search {
+    min-width: 280px;
+    flex: 1 1 320px;
+  }
+
+  #toolbar .dashboard-filter-actions {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+  }
+
+  #toolbar .dashboard-filter-actions .button {
+    display: inline-flex;
+    align-items: center;
+  }
+</style>
 <div id="toolbar">
   <form id="changelist-search" method="get" role="search">
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+    <div class="dashboard-filter-toolbar">
       {% for key, value in request.GET.items %}
         {% if key != 'q' and key != date_from_param and key != date_to_param and key != 'p' %}
           <input type="hidden" name="{{ key }}" value="{{ value }}">
         {% endif %}
       {% endfor %}
-      <div style="display:flex; flex-direction:column; min-width:260px;">
-        <label for="searchbar">{% trans "Search" %}</label>
-        <input type="text" size="40" name="q" value="{{ cl.query }}" id="searchbar" autofocus>
+      <div class="dashboard-filter-field dashboard-filter-search">
+        <label for="searchbar">Tìm kiếm</label>
+        <input type="text" size="40" name="q" value="{{ cl.query }}" id="searchbar" placeholder="{{ search_placeholder }}" autofocus>
       </div>
-      <div style="display:flex; flex-direction:column;">
-        <label for="id_{{ date_from_param }}">Tu ngay</label>
+      <div class="dashboard-filter-field">
+        <label for="id_{{ date_from_param }}">{{ date_filter_label }} từ</label>
         <input id="id_{{ date_from_param }}" type="date" name="{{ date_from_param }}" value="{{ date_from }}">
       </div>
-      <div style="display:flex; flex-direction:column;">
-        <label for="id_{{ date_to_param }}">Den ngay</label>
+      <div class="dashboard-filter-field">
+        <label for="id_{{ date_to_param }}">{{ date_filter_label }} đến</label>
         <input id="id_{{ date_to_param }}" type="date" name="{{ date_to_param }}" value="{{ date_to }}">
       </div>
-      <div style="display:flex; gap:6px; align-items:flex-end;">
-        <input type="submit" value="{% trans 'Search' %}">
-        <a class="button" href="?">Clear</a>
+      <div class="dashboard-filter-actions">
+        <input type="submit" value="Lọc">
+        <a class="button" href="?">Xóa</a>
       </div>
     </div>
   </form>

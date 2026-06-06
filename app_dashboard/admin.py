@@ -2,13 +2,26 @@ from datetime import date
 from urllib.parse import urlsplit, urlunsplit
 
 from django.contrib import admin
+from django.contrib.admin.sites import NotRegistered
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from unfold.admin import ModelAdmin
+
 from .models import TargetDomain, Keyword, ProxyConfig, JobLink, JobDetail
 
+for model in (get_user_model(), Group):
+    try:
+        admin.site.unregister(model)
+    except NotRegistered:
+        pass
 
-class DateRangeFilterAdmin(admin.ModelAdmin):
+
+class DateRangeFilterAdmin(ModelAdmin):
     date_field = None
     date_from_param = 'date_from'
     date_to_param = 'date_to'
+    search_placeholder = 'Tìm kiếm...'
+    date_filter_label = 'Ngày'
 
     def _parse_date(self, value: str):
         if not value:
@@ -55,12 +68,14 @@ class DateRangeFilterAdmin(admin.ModelAdmin):
                 'date_to': raw_date_to,
                 'date_from_param': self.date_from_param,
                 'date_to_param': self.date_to_param,
+                'search_placeholder': self.search_placeholder,
+                'date_filter_label': self.date_filter_label,
             }
         )
         return super().changelist_view(request, extra_context=extra_context)
 
 @admin.register(TargetDomain)
-class TargetDomainAdmin(admin.ModelAdmin):
+class TargetDomainAdmin(ModelAdmin):
     list_display = (
         'name',
         'is_active',
@@ -98,13 +113,13 @@ class TargetDomainAdmin(admin.ModelAdmin):
         return str(locations)
 
 @admin.register(Keyword)
-class KeywordAdmin(admin.ModelAdmin):
+class KeywordAdmin(ModelAdmin):
     list_display = ('name', 'is_active', 'created_at')
     list_editable = ('is_active',)
     search_fields = ('name',)
 
 @admin.register(ProxyConfig)
-class ProxyConfigAdmin(admin.ModelAdmin):
+class ProxyConfigAdmin(ModelAdmin):
     list_display = ('name', 'domain', 'display_proxy_url', 'is_active', 'priority', 'updated_at')
     list_editable = ('is_active', 'priority')
     list_filter = ('is_active', 'domain')
@@ -130,6 +145,8 @@ class JobLinkAdmin(DateRangeFilterAdmin):
     list_filter = ('status', 'domain', 'keyword')
     search_fields = ('url', 'keyword')
     date_field = 'created_at'
+    search_placeholder = 'Tìm URL hoặc keyword...'
+    date_filter_label = 'Ngày tạo'
     change_list_template = 'admin/app_dashboard/joblink/change_list.html'
 
 @admin.register(JobDetail)
@@ -137,4 +154,6 @@ class JobDetailAdmin(DateRangeFilterAdmin):
     list_display = ('title', 'company_name', 'location', 'salary', 'deadline', 'scraped_at')
     search_fields = ('title', 'company_name', 'location', 'job_url')
     date_field = 'scraped_at'
+    search_placeholder = 'Tìm tiêu đề, công ty, địa điểm hoặc URL...'
+    date_filter_label = 'Ngày scrape'
     change_list_template = 'admin/app_dashboard/jobdetail/change_list.html'

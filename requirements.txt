@@ -1,7 +1,9 @@
 Django>=5.0
+django-unfold>=0.81,<0.82
+whitenoise>=6.7.0
 psycopg2-binary>=2.9.9
 crawlee[playwright]>=0.4.0
-cloakbrowser==0.3.28
+cloakbrowser>=0.3.28
 asgiref>=3.8.1
 lxml>=5.1.0
 beautifulsoup4>=4.12.3
