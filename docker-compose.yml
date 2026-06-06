@@ -5,12 +5,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     command: >
-      sh -c "python manage.py collectstatic --noinput &&
-             python manage.py migrate &&
-             python -m gunicorn core.wsgi:application
-             --bind 0.0.0.0:8000
-             --workers $${GUNICORN_WORKERS:-2}
-             --timeout $${GUNICORN_TIMEOUT:-120}"
+      sh -c "python manage.py collectstatic --noinput && python manage.py migrate && python -m gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-2} --timeout $${GUNICORN_TIMEOUT:-120}"
     environment:
       DB_PROVIDER: ${DB_PROVIDER:?}
       DJANGO_ENV: ${DJANGO_ENV:-PROD}
