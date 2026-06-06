@@ -1,22 +1,119 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: job_platform_postgres
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             python -m gunicorn core.wsgi:application
+             --bind 0.0.0.0:8000
+             --workers $${GUNICORN_WORKERS:-2}
+             --timeout $${GUNICORN_TIMEOUT:-120}"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-job_platform}
-      POSTGRES_USER: ${POSTGRES_USER:-job_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-job_password}
+      DB_PROVIDER: ${DB_PROVIDER:?}
+      DJANGO_ENV: ${DJANGO_ENV:-PROD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+      DJANGO_DB_LOG_LEVEL: ${DJANGO_DB_LOG_LEVEL:-INFO}
+      DJANGO_STATIC_ROOT: ${DJANGO_STATIC_ROOT:-staticfiles}
+      DJANGO_SESSION_COOKIE_SECURE: ${DJANGO_SESSION_COOKIE_SECURE:-False}
+      DJANGO_CSRF_COOKIE_SECURE: ${DJANGO_CSRF_COOKIE_SECURE:-False}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
       TZ: ${TZ:-Asia/Saigon}
+      POSTGRES_DB: ${POSTGRES_DB:-}
+      POSTGRES_USER: ${POSTGRES_USER:-}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_HOST: ${POSTGRES_HOST:-}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_CONN_MAX_AGE: ${POSTGRES_CONN_MAX_AGE:-60}
+      POSTGRES_CONNECT_TIMEOUT: ${POSTGRES_CONNECT_TIMEOUT:-10}
+      SUPABASE_DB_NAME: ${SUPABASE_DB_NAME:-}
+      SUPABASE_DB_USER: ${SUPABASE_DB_USER:-}
+      SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-}
+      SUPABASE_DB_HOST: ${SUPABASE_DB_HOST:-}
+      SUPABASE_DB_PORT: ${SUPABASE_DB_PORT:-5432}
+      SUPABASE_CONN_MAX_AGE: ${SUPABASE_CONN_MAX_AGE:-0}
+      SUPABASE_CONNECT_TIMEOUT: ${SUPABASE_CONNECT_TIMEOUT:-10}
+      SUPABASE_SSLMODE: ${SUPABASE_SSLMODE:-require}
     ports:
-      - "${POSTGRES_EXPOSE_PORT:-5432}:5432"
+      - "${WEB_PUBLIC_PORT:-8001}:8000"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-job_user} -d ${POSTGRES_DB:-job_platform}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - web_storage:/app/storage
+
+  harvester:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: python scrapers/run_worker.py --mode=harvest --storage-dir /app/storage/harvest
+    environment:
+      DB_PROVIDER: ${DB_PROVIDER:?}
+      DJANGO_ENV: ${DJANGO_ENV:-PROD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+      DJANGO_DB_LOG_LEVEL: ${DJANGO_DB_LOG_LEVEL:-INFO}
+      TZ: ${TZ:-Asia/Saigon}
+      HARVEST_LOOP_SLEEP_MIN_SECONDS: ${HARVEST_LOOP_SLEEP_MIN_SECONDS:-2700}
+      HARVEST_LOOP_SLEEP_MAX_SECONDS: ${HARVEST_LOOP_SLEEP_MAX_SECONDS:-5400}
+      POSTGRES_DB: ${POSTGRES_DB:-}
+      POSTGRES_USER: ${POSTGRES_USER:-}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_HOST: ${POSTGRES_HOST:-}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_CONN_MAX_AGE: ${POSTGRES_CONN_MAX_AGE:-60}
+      POSTGRES_CONNECT_TIMEOUT: ${POSTGRES_CONNECT_TIMEOUT:-10}
+      SUPABASE_DB_NAME: ${SUPABASE_DB_NAME:-}
+      SUPABASE_DB_USER: ${SUPABASE_DB_USER:-}
+      SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-}
+      SUPABASE_DB_HOST: ${SUPABASE_DB_HOST:-}
+      SUPABASE_DB_PORT: ${SUPABASE_DB_PORT:-5432}
+      SUPABASE_CONN_MAX_AGE: ${SUPABASE_CONN_MAX_AGE:-0}
+      SUPABASE_CONNECT_TIMEOUT: ${SUPABASE_CONNECT_TIMEOUT:-10}
+      SUPABASE_SSLMODE: ${SUPABASE_SSLMODE:-require}
+    volumes:
+      - harvest_storage:/app/storage
+
+  extractor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: python scrapers/run_worker.py --mode=extract --storage-dir /app/storage/extract
+    environment:
+      DB_PROVIDER: ${DB_PROVIDER:?}
+      DJANGO_ENV: ${DJANGO_ENV:-PROD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+      DJANGO_DB_LOG_LEVEL: ${DJANGO_DB_LOG_LEVEL:-INFO}
+      TZ: ${TZ:-Asia/Saigon}
+      POSTGRES_DB: ${POSTGRES_DB:-}
+      POSTGRES_USER: ${POSTGRES_USER:-}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_HOST: ${POSTGRES_HOST:-}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_CONN_MAX_AGE: ${POSTGRES_CONN_MAX_AGE:-60}
+      POSTGRES_CONNECT_TIMEOUT: ${POSTGRES_CONNECT_TIMEOUT:-10}
+      SUPABASE_DB_NAME: ${SUPABASE_DB_NAME:-}
+      SUPABASE_DB_USER: ${SUPABASE_DB_USER:-}
+      SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-}
+      SUPABASE_DB_HOST: ${SUPABASE_DB_HOST:-}
+      SUPABASE_DB_PORT: ${SUPABASE_DB_PORT:-5432}
+      SUPABASE_CONN_MAX_AGE: ${SUPABASE_CONN_MAX_AGE:-0}
+      SUPABASE_CONNECT_TIMEOUT: ${SUPABASE_CONNECT_TIMEOUT:-10}
+      SUPABASE_SSLMODE: ${SUPABASE_SSLMODE:-require}
+    volumes:
+      - extract_storage:/app/storage
 
 volumes:
-  postgres_data:
+  web_storage:
+  harvest_storage:
+  extract_storage:

@@ -622,6 +622,31 @@ class LinkedInHarvester(BaseHarvester):
                 logger.debug('LinkedIn extractor text selector failed: %s - %s', selector, exc)
         return ''
 
+    async def _extract_sector_text(self, page) -> str:
+        try:
+            selectors = self._extractor_selector_list('sector')
+        except RuntimeError:
+            return ''
+
+        for selector in selectors:
+            try:
+                locator = page.locator(selector).first
+                if await locator.count() == 0:
+                    continue
+                text = await locator.evaluate(
+                    """element => Array.from(element.childNodes)
+                        .filter(node => node.nodeType === Node.TEXT_NODE)
+                        .map(node => node.textContent || '')
+                        .join(' ')""",
+                    timeout=3000,
+                )
+                text = ' '.join(str(text or '').split())
+                if text:
+                    return text
+            except Exception as exc:
+                logger.debug('LinkedIn sector selector failed: %s - %s', selector, exc)
+        return ''
+
     async def _extract_first_href(self, page, selector_name: str) -> str:
         try:
             selectors = self._extractor_selector_list(selector_name)
@@ -757,7 +782,7 @@ class LinkedInHarvester(BaseHarvester):
             'location': await self._extract_first_text(page, 'location'),
             'posted_time': await self._extract_first_text(page, 'posted_time'),
             'salary': await self._extract_first_text(page, 'salary'),
-            'sector': await self._extract_first_text(page, 'sector'),
+            'sector': await self._extract_sector_text(page),
         }
 
         if not data['title']:

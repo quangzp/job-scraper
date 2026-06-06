@@ -119,7 +119,9 @@ class BaseExtractor(abc.ABC):
                 await asyncio.sleep(random.uniform(self.request_delay_min_seconds, self.request_delay_max_seconds))
                 await self._simulate_human_behavior(context.page)
                 if self.job_read_time_seconds > 0:
-                    await asyncio.sleep(self.job_read_time_seconds)
+                    min_read_seconds = 3
+                    max_read_seconds = max(min_read_seconds, self.job_read_time_seconds)
+                    await asyncio.sleep(random.uniform(min_read_seconds, max_read_seconds))
                 await self.process_page(context)
             except Exception as e:
                 logger.error(f"Unhandled exception while extracting {context.request.url}: {e}")
