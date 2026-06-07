@@ -129,15 +129,15 @@ class DomainRunLog(models.Model):
     )
 
     domain = models.CharField(max_length=100, verbose_name="Domain")
-    mode = models.CharField(max_length=20, choices=MODE_CHOICES, verbose_name="Loáº¡i worker")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='STARTED', verbose_name="Tráº¡ng thÃ¡i")
-    run_date = models.DateField(db_index=True, verbose_name="NgÃ y cháº¡y")
-    run_number = models.PositiveIntegerField(verbose_name="Láº§n cháº¡y trong ngÃ y")
-    configured_runs = models.PositiveIntegerField(verbose_name="Tá»•ng sá»‘ láº§n cáº¥u hÃ¬nh/ngÃ y")
-    started_at = models.DateTimeField(default=timezone.now, db_index=True, verbose_name="Báº¯t Ä‘áº§u")
-    finished_at = models.DateTimeField(null=True, blank=True, verbose_name="Káº¿t thÃºc")
-    items_count = models.PositiveIntegerField(default=0, verbose_name="Sá»‘ item xá»­ lÃ½")
-    error_message = models.TextField(blank=True, default='', verbose_name="Lá»—i")
+    mode = models.CharField(max_length=20, choices=MODE_CHOICES, verbose_name="Loại worker")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='STARTED', verbose_name="Trạng thái")
+    run_date = models.DateField(db_index=True, verbose_name="Ngày chạy")
+    run_number = models.PositiveIntegerField(verbose_name="Lần chạy trong ngày")
+    configured_runs = models.PositiveIntegerField(verbose_name="Tổng số lần cấu hình/ngày")
+    started_at = models.DateTimeField(default=timezone.now, db_index=True, verbose_name="Bắt đầu")
+    finished_at = models.DateTimeField(null=True, blank=True, verbose_name="Kết thúc")
+    items_count = models.PositiveIntegerField(default=0, verbose_name="Số item xử lý")
+    error_message = models.TextField(blank=True, default='', verbose_name="Lỗi")
 
     def __str__(self):
         return f"{self.domain} {self.mode} {self.run_date} #{self.run_number}/{self.configured_runs}"
@@ -147,8 +147,8 @@ class DomainRunLog(models.Model):
         indexes = [
             models.Index(fields=['domain', 'mode', 'run_date', 'status']),
         ]
-        verbose_name = "Lá»‹ch sá»­ cháº¡y domain"
-        verbose_name_plural = "Lá»‹ch sá»­ cháº¡y domain"
+        verbose_name = "Lịch sử chạy domain"
+        verbose_name_plural = "Lịch sử chạy domain"
 
 
 class JobLink(models.Model):

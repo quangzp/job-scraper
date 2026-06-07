@@ -124,7 +124,7 @@ class TargetDomainAdmin(DashboardModelAdmin):
             return ', '.join(str(location) for location in locations)
         return str(locations)
 
-    @admin.display(description='Harvest hÃ´m nay')
+    @admin.display(description='Harvest hôm nay')
     def display_today_harvest_runs(self, obj):
         used_runs = DomainRunLog.objects.filter(
             domain=obj.name,
@@ -133,7 +133,7 @@ class TargetDomainAdmin(DashboardModelAdmin):
         ).count()
         return f'{used_runs}/{obj.harvest_runs_per_day}'
 
-    @admin.display(description='Extract hÃ´m nay')
+    @admin.display(description='Extract hôm nay')
     def display_today_extract_runs(self, obj):
         used_runs = DomainRunLog.objects.filter(
             domain=obj.name,
@@ -185,8 +185,8 @@ class DomainRunLogAdmin(DateRangeFilterAdmin):
     list_filter = ('mode', 'status', 'domain', 'run_date')
     search_fields = ('domain', 'error_message')
     date_field = 'started_at'
-    search_placeholder = 'TÃ¬m domain hoáº·c lá»—i...'
-    date_filter_label = 'NgÃ y báº¯t Ä‘áº§u'
+    search_placeholder = 'Tìm domain hoặc lỗi...'
+    date_filter_label = 'Ngày bắt đầu'
     readonly_fields = (
         'domain',
         'mode',
@@ -200,7 +200,7 @@ class DomainRunLogAdmin(DateRangeFilterAdmin):
         'error_message',
     )
 
-    @admin.display(description='Láº§n cháº¡y/ngÃ y')
+    @admin.display(description='Lần chạy/ngày')
     def display_daily_runs(self, obj):
         return f'{obj.run_number}/{obj.configured_runs}'
 
