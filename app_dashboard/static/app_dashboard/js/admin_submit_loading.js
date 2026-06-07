@@ -68,6 +68,31 @@
     }
   }
 
+  function isDeleteSubmitter(submitter) {
+    return Boolean(submitter && submitter.dataset && submitter.dataset.dashboardDeleteAction === 'true');
+  }
+
+  function selectedActionCount(form) {
+    return form.querySelectorAll('input[name="_selected_action"]:checked').length;
+  }
+
+  function showDeleteSelectionError(form) {
+    var error = form.querySelector('.dashboard-delete-error');
+    if (!error) {
+      return;
+    }
+
+    error.hidden = false;
+    error.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  function clearDeleteSelectionError(form) {
+    var error = form.querySelector('.dashboard-delete-error');
+    if (error) {
+      error.hidden = true;
+    }
+  }
+
   document.addEventListener('click', rememberSubmitter, true);
 
   document.addEventListener('submit', function (event) {
@@ -82,6 +107,14 @@
     }
 
     var submitter = event.submitter || form.dashboardSubmitter;
+    if (isDeleteSubmitter(submitter) && selectedActionCount(form) === 0) {
+      event.preventDefault();
+      clearDeleteSelectionError(form);
+      showDeleteSelectionError(form);
+      return;
+    }
+
+    clearDeleteSelectionError(form);
     form.dataset.dashboardSubmitting = 'true';
     addSubmitterFallback(form, submitter);
     setLoadingState(form, submitter);

@@ -1,0 +1,39 @@
+<style>
+  body.change-list,
+  body.change-list #container,
+  body.change-list #content,
+  body.change-list #content-main,
+  body.change-list #changelist,
+  body.change-list #changelist-form {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  body.change-list #changelist .results,
+  body.change-list #changelist-form .results,
+  body.change-list #changelist-form .overflow-x-auto,
+  body.change-list .results {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  body.change-list #changelist table,
+  body.change-list #changelist-form table,
+  body.change-list .results table,
+  body.change-list #result_list {
+    min-width: max-content;
+    width: max-content;
+  }
+
+  body.change-list #changelist table th,
+  body.change-list #changelist table td,
+  body.change-list #changelist-form table th,
+  body.change-list #changelist-form table td,
+  body.change-list #result_list th,
+  body.change-list #result_list td {
+    white-space: nowrap;
+  }
+</style>

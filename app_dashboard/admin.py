@@ -18,6 +18,11 @@ for model in (get_user_model(), Group):
 
 
 class DashboardModelAdmin(ModelAdmin):
+    change_list_template = 'admin/app_dashboard/change_list_scroll.html'
+    actions_on_top = False
+    actions_on_bottom = True
+    actions_selection_counter = False
+
     class Media:
         css = {
             'all': ('app_dashboard/css/admin_submit_loading.css',),
