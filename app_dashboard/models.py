@@ -117,6 +117,40 @@ class ProxyConfig(models.Model):
         verbose_name_plural = "Proxies"
 
 
+class DomainRunLog(models.Model):
+    MODE_CHOICES = (
+        ('HARVEST', 'Harvest'),
+        ('EXTRACT', 'Extract'),
+    )
+    STATUS_CHOICES = (
+        ('STARTED', 'Started'),
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+    )
+
+    domain = models.CharField(max_length=100, verbose_name="Domain")
+    mode = models.CharField(max_length=20, choices=MODE_CHOICES, verbose_name="Loáº¡i worker")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='STARTED', verbose_name="Tráº¡ng thÃ¡i")
+    run_date = models.DateField(db_index=True, verbose_name="NgÃ y cháº¡y")
+    run_number = models.PositiveIntegerField(verbose_name="Láº§n cháº¡y trong ngÃ y")
+    configured_runs = models.PositiveIntegerField(verbose_name="Tá»•ng sá»‘ láº§n cáº¥u hÃ¬nh/ngÃ y")
+    started_at = models.DateTimeField(default=timezone.now, db_index=True, verbose_name="Báº¯t Ä‘áº§u")
+    finished_at = models.DateTimeField(null=True, blank=True, verbose_name="Káº¿t thÃºc")
+    items_count = models.PositiveIntegerField(default=0, verbose_name="Sá»‘ item xá»­ lÃ½")
+    error_message = models.TextField(blank=True, default='', verbose_name="Lá»—i")
+
+    def __str__(self):
+        return f"{self.domain} {self.mode} {self.run_date} #{self.run_number}/{self.configured_runs}"
+
+    class Meta:
+        ordering = ['-started_at', '-id']
+        indexes = [
+            models.Index(fields=['domain', 'mode', 'run_date', 'status']),
+        ]
+        verbose_name = "Lá»‹ch sá»­ cháº¡y domain"
+        verbose_name_plural = "Lá»‹ch sá»­ cháº¡y domain"
+
+
 class JobLink(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),

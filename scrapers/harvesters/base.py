@@ -9,6 +9,7 @@ from typing import Any, List
 from asgiref.sync import sync_to_async
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
 from crawlee.fingerprint_suite import DefaultFingerprintGenerator, HeaderGeneratorOptions
+from django.utils import timezone
 
 # Classes in scrapers/ are called through run_worker.py after django.setup().
 from app_dashboard.models import JobLink, Keyword, TargetDomain
@@ -304,7 +305,13 @@ class BaseHarvester(abc.ABC):
 
     async def harvest(self, keyword_name: str) -> None:
         """Run the harvester for one keyword."""
-        logger.info(f"Starting harvest for keyword={keyword_name} domain={self.domain}")
+        started_at = timezone.localtime(timezone.now()).isoformat()
+        logger.info(
+            "Starting harvester domain=%s keyword=%s started_at=%s",
+            self.domain,
+            keyword_name,
+            started_at,
+        )
 
         keyword, _ = await sync_to_async(Keyword.objects.get_or_create)(
             name=keyword_name,

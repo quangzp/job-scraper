@@ -5,10 +5,11 @@ from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.utils import timezone
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 
-from .models import TargetDomain, Keyword, ProxyConfig, JobLink, JobDetail
+from .models import TargetDomain, Keyword, ProxyConfig, DomainRunLog, JobLink, JobDetail
 
 for model in (get_user_model(), Group):
     try:
@@ -17,7 +18,15 @@ for model in (get_user_model(), Group):
         pass
 
 
-class DateRangeFilterAdmin(ModelAdmin):
+class DashboardModelAdmin(ModelAdmin):
+    class Media:
+        css = {
+            'all': ('app_dashboard/css/admin_submit_loading.css',),
+        }
+        js = ('app_dashboard/js/admin_submit_loading.js',)
+
+
+class DateRangeFilterAdmin(DashboardModelAdmin):
     date_field = None
     date_from_param = 'date_from'
     date_to_param = 'date_to'
@@ -76,7 +85,7 @@ class DateRangeFilterAdmin(ModelAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 @admin.register(TargetDomain)
-class TargetDomainAdmin(ModelAdmin):
+class TargetDomainAdmin(DashboardModelAdmin):
     list_display = (
         'name',
         'is_active',
@@ -84,6 +93,8 @@ class TargetDomainAdmin(ModelAdmin):
         'is_extract_enabled',
         'harvest_runs_per_day',
         'extract_runs_per_day',
+        'display_today_harvest_runs',
+        'display_today_extract_runs',
         'max_jobs_per_keyword',
         'display_search_locations',
         'extract_batch_size',
@@ -113,14 +124,32 @@ class TargetDomainAdmin(ModelAdmin):
             return ', '.join(str(location) for location in locations)
         return str(locations)
 
+    @admin.display(description='Harvest hÃ´m nay')
+    def display_today_harvest_runs(self, obj):
+        used_runs = DomainRunLog.objects.filter(
+            domain=obj.name,
+            mode='HARVEST',
+            run_date=timezone.localdate(),
+        ).count()
+        return f'{used_runs}/{obj.harvest_runs_per_day}'
+
+    @admin.display(description='Extract hÃ´m nay')
+    def display_today_extract_runs(self, obj):
+        used_runs = DomainRunLog.objects.filter(
+            domain=obj.name,
+            mode='EXTRACT',
+            run_date=timezone.localdate(),
+        ).count()
+        return f'{used_runs}/{obj.extract_runs_per_day}'
+
 @admin.register(Keyword)
-class KeywordAdmin(ModelAdmin):
+class KeywordAdmin(DashboardModelAdmin):
     list_display = ('name', 'is_active', 'created_at')
     list_editable = ('is_active',)
     search_fields = ('name',)
 
 @admin.register(ProxyConfig)
-class ProxyConfigAdmin(ModelAdmin):
+class ProxyConfigAdmin(DashboardModelAdmin):
     list_display = ('name', 'domain', 'display_proxy_url', 'is_active', 'priority', 'updated_at')
     list_editable = ('is_active', 'priority')
     list_filter = ('is_active', 'domain')
@@ -139,6 +168,48 @@ class ProxyConfigAdmin(ModelAdmin):
         port = f':{parts.port}' if parts.port else ''
         netloc = f'***:***@{host}{port}'
         return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+
+
+@admin.register(DomainRunLog)
+class DomainRunLogAdmin(DateRangeFilterAdmin):
+    list_display = (
+        'domain',
+        'mode',
+        'status',
+        'run_date',
+        'display_daily_runs',
+        'started_at',
+        'finished_at',
+        'items_count',
+    )
+    list_filter = ('mode', 'status', 'domain', 'run_date')
+    search_fields = ('domain', 'error_message')
+    date_field = 'started_at'
+    search_placeholder = 'TÃ¬m domain hoáº·c lá»—i...'
+    date_filter_label = 'NgÃ y báº¯t Ä‘áº§u'
+    readonly_fields = (
+        'domain',
+        'mode',
+        'status',
+        'run_date',
+        'run_number',
+        'configured_runs',
+        'started_at',
+        'finished_at',
+        'items_count',
+        'error_message',
+    )
+
+    @admin.display(description='Láº§n cháº¡y/ngÃ y')
+    def display_daily_runs(self, obj):
+        return f'{obj.run_number}/{obj.configured_runs}'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(JobLink)
 class JobLinkAdmin(DateRangeFilterAdmin):

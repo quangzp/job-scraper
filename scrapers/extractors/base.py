@@ -231,21 +231,27 @@ class BaseExtractor(abc.ABC):
         except Exception as e:
             logger.error(f"Error saving JobDetail for link_id={link_id}: {e}")
 
-    async def extract(self, batch_size: int = 10) -> None:
+    async def extract(self, batch_size: int = 10) -> int:
         """Fetch one batch of links, crawl them, and exit."""
         from app_dashboard.models import TargetDomain
 
-        logger.info(f"Starting one-shot extractor for domain={self.domain}")
+        started_at = timezone.localtime(timezone.now()).isoformat()
+        logger.info(
+            "Starting one-shot extractor domain=%s batch_size=%s started_at=%s",
+            self.domain,
+            batch_size,
+            started_at,
+        )
 
         domain_obj = await sync_to_async(TargetDomain.objects.filter(name=self.domain).first)()
         if not domain_obj or not domain_obj.is_active or not domain_obj.is_extract_enabled:
             logger.warning(f"Domain {self.domain} is inactive, extract-disabled, or deleted. Stopping extractor.")
-            return
+            return 0
 
         links = await self.fetch_pending_links(batch_size=batch_size)
         if not links:
             logger.info(f"[{self.domain}] No eligible links to process.")
-            return
+            return 0
 
         logger.info(f"Fetched {len(links)} links for extraction.")
         requests = [
@@ -272,3 +278,4 @@ class BaseExtractor(abc.ABC):
                 logger.warning(f"Marked {failed_count} stuck PROCESSING links as FAILED.")
 
         await cleanup_failed()
+        return len(links)

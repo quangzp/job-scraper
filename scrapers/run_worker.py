@@ -63,6 +63,7 @@ def main():
             from app_dashboard.models import TargetDomain, Keyword
             from asgiref.sync import sync_to_async
             from scrapers.harvesters.base import BaseHarvester
+            from scrapers.utils.run_log import begin_domain_run, finish_domain_run, get_domain_run_usage
             
             print("Manager Harvester đã khởi động. Quét hệ thống theo chu kỳ ngẫu nhiên.")
             
@@ -86,9 +87,34 @@ def main():
                         harvester_class = get_class_dynamically(module_path, BaseHarvester)
                         
                         if harvester_class:
-                            harvester = harvester_class(domain_config=domain)
-                            for kw in keywords:
-                                await harvester.harvest(kw.name)
+                            run_info = await sync_to_async(begin_domain_run)(domain, 'HARVEST')
+                            if not run_info:
+                                usage = await sync_to_async(get_domain_run_usage)(domain, 'HARVEST')
+                                print(
+                                    f"Skip Harvester domain={domain.name}: "
+                                    f"daily_runs={usage.used_runs}/{usage.configured_runs} "
+                                    f"run_date={usage.run_date}."
+                                )
+                                continue
+
+                            print(
+                                f"Starting Harvester domain={domain.name}: "
+                                f"daily_runs={run_info.run_number}/{run_info.configured_runs} "
+                                f"run_date={run_info.run_date} started_at={run_info.started_at}."
+                            )
+                            try:
+                                harvester = harvester_class(domain_config=domain)
+                                for kw in keywords:
+                                    await harvester.harvest(kw.name)
+                            except Exception as exc:
+                                await sync_to_async(finish_domain_run)(
+                                    run_info.log_id,
+                                    'FAILED',
+                                    error_message=str(exc),
+                                )
+                                print(f"Harvester domain={domain.name} failed: {exc}")
+                            else:
+                                await sync_to_async(finish_domain_run)(run_info.log_id, 'SUCCESS')
                         else:
                             print(f"Chưa hỗ trợ Harvester (chưa có code class) cho domain: {domain.name}")
                             
@@ -108,8 +134,33 @@ def main():
             from app_dashboard.models import TargetDomain
             from asgiref.sync import sync_to_async
             from scrapers.extractors.base import BaseExtractor
+            from scrapers.utils.run_log import begin_domain_run, finish_domain_run, get_domain_run_usage
             
             running_tasks = {} # domain_name -> asyncio.Task
+
+            async def run_extractor_task(extractor, batch_size, run_info):
+                try:
+                    items_count = await extractor.extract(batch_size=batch_size)
+                except asyncio.CancelledError:
+                    await sync_to_async(finish_domain_run)(
+                        run_info.log_id,
+                        'FAILED',
+                        error_message='Extractor task cancelled.',
+                    )
+                    raise
+                except Exception as exc:
+                    await sync_to_async(finish_domain_run)(
+                        run_info.log_id,
+                        'FAILED',
+                        error_message=str(exc),
+                    )
+                    print(f"Extractor domain={run_info.domain} failed: {exc}")
+                else:
+                    await sync_to_async(finish_domain_run)(
+                        run_info.log_id,
+                        'SUCCESS',
+                        items_count=items_count or 0,
+                    )
 
             print("Manager Extractor đã khởi động. Quét domain mỗi 30 phút.")
             
@@ -145,9 +196,24 @@ def main():
                         extractor_class = get_class_dynamically(module_path, BaseExtractor)
                         
                         if extractor_class:
+                            run_info = await sync_to_async(begin_domain_run)(domain, 'EXTRACT')
+                            if not run_info:
+                                usage = await sync_to_async(get_domain_run_usage)(domain, 'EXTRACT')
+                                print(
+                                    f"Skip Extractor domain={domain.name}: "
+                                    f"daily_runs={usage.used_runs}/{usage.configured_runs} "
+                                    f"run_date={usage.run_date}."
+                                )
+                                continue
+
+                            print(
+                                f"Starting Extractor domain={domain.name}: "
+                                f"daily_runs={run_info.run_number}/{run_info.configured_runs} "
+                                f"run_date={run_info.run_date} started_at={run_info.started_at}."
+                            )
                             extractor = extractor_class(domain_config=domain)
                             batch_size = max(1, int(getattr(domain, 'extract_batch_size', 3) or 3))
-                            task = asyncio.create_task(extractor.extract(batch_size=batch_size))
+                            task = asyncio.create_task(run_extractor_task(extractor, batch_size, run_info))
                             running_tasks[domain.name] = task
                         else:
                             print(f"Chưa hỗ trợ Extractor cho domain: {domain.name}")
