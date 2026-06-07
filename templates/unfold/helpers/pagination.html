@@ -1,0 +1,28 @@
+{% load admin_list unfold i18n %}
+
+{% if cl %}
+    <div class="dashboard-changelist-footer px-4 lg:backdrop-blur-xs lg:bg-white/80 lg:flex lg:items-center lg:dark:bg-base-900/80 lg:left-0 lg:right-0 lg:bottom-0 lg:sticky relative z-40 lg:border-t lg:border-base-200 lg:relative lg:scrollable-top lg:dark:border-base-800 {% element_classes 'pagination' %}">
+        <div class="dashboard-changelist-footer-inner flex flex-row grow items-center gap-3 w-full">
+            {% pagination cl %}
+
+            <div class="dashboard-footer-actions ml-auto flex flex-row flex-wrap items-center justify-end gap-2">
+                {% if cl.show_admin_actions %}
+                    <div class="dashboard-delete-error" role="alert" hidden>
+                        {% translate "Select at least one item before deleting." %}
+                    </div>
+                    <button
+                        type="submit"
+                        name="index"
+                        value="0"
+                        form="changelist-form"
+                        class="dashboard-delete-button bg-red-600 border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white hover:bg-red-700"
+                        data-dashboard-delete-action="true"
+                    >
+                        {% translate "Delete" %}
+                    </button>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+{% endif %}

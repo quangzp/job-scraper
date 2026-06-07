@@ -58,27 +58,96 @@
   margin-left: auto;
 }
 
+.dashboard-changelist-footer {
+  min-width: 0;
+  width: 100%;
+}
+
+.dashboard-changelist-footer-inner {
+  min-width: 0;
+}
+
+.dashboard-footer-actions {
+  min-width: max-content;
+}
+
+.result-list-wrapper,
+#changelist,
+#changelist-form,
+#changelist-form > div,
+.dashboard-result-scroll,
+.simplebar-wrapper,
+.simplebar-mask,
+.simplebar-offset,
+.simplebar-content-wrapper,
+.simplebar-content {
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.simplebar-content-wrapper {
+  overflow-x: auto !important;
+}
+
+#result_list.result-list,
+#changelist #result_list,
+#changelist-form #result_list,
+.dashboard-result-list,
+.results table {
+  display: table !important;
+  min-width: max-content !important;
+  table-layout: auto !important;
+  width: max-content !important;
+}
+
+.dashboard-result-scroll {
+  display: block !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+}
+
+#result_list thead,
+#result_list tbody {
+  display: table-row-group !important;
+}
+
+#result_list tr {
+  display: table-row !important;
+}
+
+#result_list th,
+#result_list td,
+#changelist table th,
+#changelist table td,
+#changelist-form table th,
+#changelist-form table td {
+  display: table-cell !important;
+  max-width: none !important;
+  min-width: 9rem !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+#result_list .action-checkbox,
+#result_list .action-checkbox-column {
+  min-width: 3rem !important;
+  width: 3rem !important;
+}
+
 #changelist .results,
 #changelist-form .results,
 #changelist-form .overflow-x-auto,
 .change-list #result_list,
 .change-list .results {
-  max-width: 100%;
-  overflow-x: auto;
+  max-width: 100% !important;
+  overflow-x: auto !important;
 }
 
-#changelist .results table,
-#changelist-form .results table,
-.change-list #result_list,
-.change-list .results table {
-  min-width: max-content;
-}
-
-#changelist table th,
-#changelist table td,
-#changelist-form table th,
-#changelist-form table td {
-  white-space: nowrap;
+/* Top scrollbar support if enabled */
+.simplebar-horizontal-scrollbar-top .simplebar-track.simplebar-horizontal {
+  top: 0;
+  bottom: auto;
 }
 
 @keyframes dashboard-submit-spin {

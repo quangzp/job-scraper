@@ -35,6 +35,21 @@
     form.appendChild(hidden);
   }
 
+  function ensureDeleteActionInput(form) {
+    var actionInput = form.querySelector('input[name="action"]');
+    if (actionInput) {
+      actionInput.value = 'delete_selected';
+      return;
+    }
+
+    actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'delete_selected';
+    actionInput.dataset.dashboardDeleteFallback = 'true';
+    form.appendChild(actionInput);
+  }
+
   function addInputSpinner(form, submitter) {
     if (!submitter || submitter.tagName.toLowerCase() !== 'input') {
       return;
@@ -115,6 +130,10 @@
     }
 
     clearDeleteSelectionError(form);
+    if (isDeleteSubmitter(submitter)) {
+      ensureDeleteActionInput(form);
+    }
+
     form.dataset.dashboardSubmitting = 'true';
     addSubmitterFallback(form, submitter);
     setLoadingState(form, submitter);
@@ -126,6 +145,10 @@
       delete form.dashboardSubmitter;
 
       form.querySelectorAll('[data-dashboard-submit-fallback="true"]').forEach(function (input) {
+        input.remove();
+      });
+
+      form.querySelectorAll('[data-dashboard-delete-fallback="true"]').forEach(function (input) {
         input.remove();
       });
 

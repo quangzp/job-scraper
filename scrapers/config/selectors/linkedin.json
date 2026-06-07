@@ -1,8 +1,8 @@
 {
   "harvester": {
-    "login_email": "input#username",
-    "login_password": "input#password",
-    "login_submit": "button[type='submit']",
+    "login_email": "label:has-text('Email or phone') ~ div input, input[autocomplete*='username']",
+    "login_password": "label:has-text('Password') ~ div input, input[type='password'], input[autocomplete*='current-password']",
+    "login_submit": "button:has-text('Sign in'), button[type='submit']:has-text('Sign in')",
     "logged_in_marker": "nav.global-nav, a[href*='/feed/']",
     "checkpoint": "input[name='pin'], input#input__phone_verification_pin, #captcha-internal, form[action*='checkpoint']",
     "soft_block": [

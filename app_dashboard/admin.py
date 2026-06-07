@@ -22,6 +22,8 @@ class DashboardModelAdmin(ModelAdmin):
     actions_on_top = False
     actions_on_bottom = True
     actions_selection_counter = False
+    list_horizontal_scrollbar_top = True
+    list_fullwidth = True
 
     class Media:
         css = {
@@ -96,14 +98,6 @@ class TargetDomainAdmin(DashboardModelAdmin):
         'is_harvest_enabled',
         'is_extract_enabled',
         'is_proxy_enabled',
-        'harvest_runs_per_day',
-        'extract_runs_per_day',
-        'max_jobs_per_keyword',
-        'display_search_locations',
-        'extract_batch_size',
-        'request_delay_min_seconds',
-        'request_delay_max_seconds',
-        'job_read_time_seconds',
         'created_at',
     )
     list_editable = (
@@ -111,13 +105,6 @@ class TargetDomainAdmin(DashboardModelAdmin):
         'is_harvest_enabled',
         'is_extract_enabled',
         'is_proxy_enabled',
-        'harvest_runs_per_day',
-        'extract_runs_per_day',
-        'max_jobs_per_keyword',
-        'extract_batch_size',
-        'request_delay_min_seconds',
-        'request_delay_max_seconds',
-        'job_read_time_seconds',
     )
     search_fields = ('name',)
 

@@ -4,28 +4,51 @@
   body.change-list #content,
   body.change-list #content-main,
   body.change-list #changelist,
-  body.change-list #changelist-form {
+  body.change-list #changelist-form,
+  body.change-list .result-list-wrapper,
+  body.change-list .dashboard-result-scroll,
+  body.change-list .simplebar-wrapper,
+  body.change-list .simplebar-mask,
+  body.change-list .simplebar-offset,
+  body.change-list .simplebar-content-wrapper,
+  body.change-list .simplebar-content {
     max-width: 100%;
-    min-width: 0;
-    overflow-x: auto;
+    min-width: 0 !important;
+  }
+
+  body.change-list .simplebar-content-wrapper {
+    overflow-x: auto !important;
   }
 
   body.change-list #changelist .results,
   body.change-list #changelist-form .results,
   body.change-list #changelist-form .overflow-x-auto,
-  body.change-list .results {
-    display: block;
-    max-width: 100%;
-    overflow-x: auto;
+  body.change-list .results,
+  body.change-list .dashboard-result-scroll {
+    display: block !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
     overscroll-behavior-x: contain;
   }
 
   body.change-list #changelist table,
   body.change-list #changelist-form table,
   body.change-list .results table,
+  body.change-list .dashboard-result-list,
   body.change-list #result_list {
-    min-width: max-content;
-    width: max-content;
+    display: table !important;
+    min-width: max-content !important;
+    table-layout: auto !important;
+    width: max-content !important;
+  }
+
+  body.change-list #result_list thead,
+  body.change-list #result_list tbody {
+    display: table-row-group !important;
+  }
+
+  body.change-list #result_list tr {
+    display: table-row !important;
   }
 
   body.change-list #changelist table th,
@@ -34,6 +57,22 @@
   body.change-list #changelist-form table td,
   body.change-list #result_list th,
   body.change-list #result_list td {
-    white-space: nowrap;
+    display: table-cell !important;
+    max-width: none !important;
+    min-width: 9rem !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+  }
+
+  body.change-list #result_list .action-checkbox,
+  body.change-list #result_list .action-checkbox-column {
+    min-width: 3rem !important;
+    width: 3rem !important;
+  }
+  
+  /* Top scrollbar support if enabled */
+  body.change-list .simplebar-horizontal-scrollbar-top .simplebar-track.simplebar-horizontal {
+    top: 0;
+    bottom: auto;
   }
 </style>
