@@ -15,6 +15,11 @@ class TargetDomain(models.Model):
         verbose_name="Bật Extractor",
         help_text="Cho phép domain này bóc tách chi tiết job.",
     )
+    is_proxy_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Enable proxy",
+        help_text="Use configured proxies for this domain when running harvesters and extractors.",
+    )
     harvest_runs_per_day = models.PositiveIntegerField(
         default=1,
         verbose_name="Số lần chạy Harvester/ngày",

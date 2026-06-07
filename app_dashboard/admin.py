@@ -5,7 +5,6 @@ from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.utils import timezone
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 
@@ -91,10 +90,9 @@ class TargetDomainAdmin(DashboardModelAdmin):
         'is_active',
         'is_harvest_enabled',
         'is_extract_enabled',
+        'is_proxy_enabled',
         'harvest_runs_per_day',
         'extract_runs_per_day',
-        'display_today_harvest_runs',
-        'display_today_extract_runs',
         'max_jobs_per_keyword',
         'display_search_locations',
         'extract_batch_size',
@@ -107,6 +105,7 @@ class TargetDomainAdmin(DashboardModelAdmin):
         'is_active',
         'is_harvest_enabled',
         'is_extract_enabled',
+        'is_proxy_enabled',
         'harvest_runs_per_day',
         'extract_runs_per_day',
         'max_jobs_per_keyword',
@@ -123,24 +122,6 @@ class TargetDomainAdmin(DashboardModelAdmin):
         if isinstance(locations, list):
             return ', '.join(str(location) for location in locations)
         return str(locations)
-
-    @admin.display(description='Harvest hôm nay')
-    def display_today_harvest_runs(self, obj):
-        used_runs = DomainRunLog.objects.filter(
-            domain=obj.name,
-            mode='HARVEST',
-            run_date=timezone.localdate(),
-        ).count()
-        return f'{used_runs}/{obj.harvest_runs_per_day}'
-
-    @admin.display(description='Extract hôm nay')
-    def display_today_extract_runs(self, obj):
-        used_runs = DomainRunLog.objects.filter(
-            domain=obj.name,
-            mode='EXTRACT',
-            run_date=timezone.localdate(),
-        ).count()
-        return f'{used_runs}/{obj.extract_runs_per_day}'
 
 @admin.register(Keyword)
 class KeywordAdmin(DashboardModelAdmin):
@@ -180,7 +161,6 @@ class DomainRunLogAdmin(DateRangeFilterAdmin):
         'display_daily_runs',
         'started_at',
         'finished_at',
-        'items_count',
     )
     list_filter = ('mode', 'status', 'domain', 'run_date')
     search_fields = ('domain', 'error_message')
@@ -196,7 +176,6 @@ class DomainRunLogAdmin(DateRangeFilterAdmin):
         'configured_runs',
         'started_at',
         'finished_at',
-        'items_count',
         'error_message',
     )
 

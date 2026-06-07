@@ -33,11 +33,16 @@ def _is_supported_proxy_url(url: str) -> bool:
 
 
 def _fetch_proxy_urls_from_db(domain: str | None) -> list[str]:
-    from app_dashboard.models import ProxyConfig
+    from app_dashboard.models import ProxyConfig, TargetDomain
 
     close_old_connections()
     try:
         if domain:
+            domain_config = TargetDomain.objects.filter(name=domain).only('is_proxy_enabled').first()
+            if domain_config and not domain_config.is_proxy_enabled:
+                logger.info(f'Proxy is disabled for domain={domain}. Running without proxy.')
+                return []
+
             domain_proxy_urls = list(
                 ProxyConfig.objects.filter(is_active=True, domain__name=domain)
                 .order_by('priority', 'id')

@@ -30,6 +30,29 @@
   opacity: 0.65;
 }
 
+#changelist .results,
+#changelist-form .results,
+#changelist-form .overflow-x-auto,
+.change-list #result_list,
+.change-list .results {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+#changelist .results table,
+#changelist-form .results table,
+.change-list #result_list,
+.change-list .results table {
+  min-width: max-content;
+}
+
+#changelist table th,
+#changelist table td,
+#changelist-form table th,
+#changelist-form table td {
+  white-space: nowrap;
+}
+
 @keyframes dashboard-submit-spin {
   to {
     transform: rotate(360deg);
