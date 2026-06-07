@@ -233,6 +233,58 @@ class LinkedInHarvester(BaseHarvester):
         if reason:
             raise LinkedInSoftBlockError(reason)
 
+    async def _log_login_marker_diagnostics(self, page, error: Exception) -> None:
+        marker_selector = self._selector('logged_in_marker')
+        title = ''
+        body_text = ''
+        marker_count: int | str = 'unknown'
+        visible_marker_count: int | str = 'unknown'
+        soft_block_reason = None
+
+        try:
+            title = await page.title()
+        except Exception as exc:
+            title = f'<title unavailable: {exc}>'
+
+        try:
+            marker_locator = page.locator(marker_selector)
+            marker_count = await marker_locator.count()
+            visible_count = 0
+            for index in range(min(int(marker_count), 10)):
+                try:
+                    if await marker_locator.nth(index).is_visible():
+                        visible_count += 1
+                except Exception:
+                    continue
+            visible_marker_count = visible_count
+        except Exception as exc:
+            marker_count = f'count failed: {exc}'
+            visible_marker_count = 'unknown'
+
+        try:
+            soft_block_reason = await self._detect_soft_block(page, 'login marker wait failed')
+        except Exception as exc:
+            soft_block_reason = f'soft-block check failed: {exc}'
+
+        try:
+            body_text = await page.locator('body').inner_text(timeout=5000)
+            body_text = ' '.join(body_text.split())[:2000]
+        except Exception as exc:
+            body_text = f'<body text unavailable: {exc}>'
+
+        logger.error(
+            'LinkedIn login marker diagnostic: url=%s title=%r marker_selector=%r '
+            'marker_count=%s visible_marker_count=%s soft_block_reason=%r body_text=%r error=%s',
+            page.url,
+            title,
+            marker_selector,
+            marker_count,
+            visible_marker_count,
+            soft_block_reason,
+            body_text,
+            error,
+        )
+
     def _retire_context_session(self, context: PlaywrightCrawlingContext, reason: str) -> None:
         session = getattr(context, 'session', None)
         if not session:
@@ -403,6 +455,7 @@ class LinkedInHarvester(BaseHarvester):
         try:
             await page.wait_for_selector(self._selector('logged_in_marker'), timeout=30000)
         except Exception as exc:
+            await self._log_login_marker_diagnostics(page, exc)
             raise RuntimeError('LinkedIn login did not reach an authenticated page.') from exc
 
         await self._save_session_state(page)

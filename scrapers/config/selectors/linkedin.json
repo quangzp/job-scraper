@@ -2,7 +2,7 @@
   "harvester": {
     "login_email": "label:has-text('Email or phone') ~ div input:visible, input[autocomplete*='username']:visible",
     "login_password": "label:has-text('Password') ~ div input:visible, input[type='password']:visible, input[autocomplete*='current-password']:visible",
-    "login_submit": "button:has-text('Sign in'):visible:not([aria-label*='password']):not([aria-label*='mật khẩu']), button:has-text('Đăng nhập'):visible:not([aria-label*='password']):not([aria-label*='mật khẩu'])",
+    "login_submit": "button:visible:has(:text-is('Sign in')), button:visible:has(:text-is('Đăng nhập'))",
     "logged_in_marker": "nav.global-nav, a[href*='/feed/']",
     "checkpoint": "input[name='pin'], input#input__phone_verification_pin, #captcha-internal, form[action*='checkpoint']",
     "soft_block": [
