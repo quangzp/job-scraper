@@ -51,11 +51,6 @@ class LinkedInHarvester(BaseHarvester):
     def __init__(self, max_requests_per_crawl: int = 100, domain_config=None):
         self.email = os.getenv('LINKEDIN_EMAIL', '').strip()
         self.password = os.getenv('LINKEDIN_PASSWORD', '').strip()
-        logger.info(
-            'LinkedIn credentials loaded email=%s password_len=%s',
-            self.email,
-            self.password
-        )
         self.session_path = self._build_session_path()
         self.selectors, self.extractor_selectors = self._load_selector_config()
         self._saved_count_by_keyword: dict[str, int] = {}
@@ -449,6 +444,11 @@ class LinkedInHarvester(BaseHarvester):
             raise RuntimeError('LINKEDIN_EMAIL and LINKEDIN_PASSWORD must be configured in .env.')
 
         logger.info('LinkedIn session is missing or expired. Logging in...')
+        logger.info(
+            'LinkedIn credentials loaded email=%s password_len=%s',
+            self.email,
+            self.password,
+        )
         await page.goto(self.login_url, wait_until='domcontentloaded')
         await page.type(self._selector('login_email'), self.email, delay=100)
         await page.type(self._selector('login_password'), self.password, delay=100)
