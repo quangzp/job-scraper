@@ -5,6 +5,7 @@ import os
 import random
 from datetime import timedelta
 from typing import Any, List
+from urllib.parse import urlsplit, urlunsplit
 
 from asgiref.sync import sync_to_async
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
@@ -17,6 +18,29 @@ from scrapers.utils.browser_pool import build_browser_pool, get_browser_backend
 from scrapers.utils.proxy import load_proxy_configuration
 
 logger = logging.getLogger(__name__)
+
+
+def _mask_proxy_url(proxy_url) -> str:
+    if not proxy_url:
+        return 'none'
+
+    raw_url = str(proxy_url)
+    try:
+        parts = urlsplit(raw_url)
+    except Exception:
+        return '<configured>'
+
+    if not parts.netloc:
+        return raw_url
+
+    host = parts.hostname or ''
+    port = f':{parts.port}' if parts.port else ''
+    if parts.username or parts.password:
+        netloc = f'***:***@{host}{port}'
+    else:
+        netloc = parts.netloc
+
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
 def _env_int(name: str, default: int) -> int:
@@ -147,6 +171,14 @@ class BaseHarvester(abc.ABC):
 
         @crawler.router.default_handler
         async def request_handler(context: PlaywrightCrawlingContext) -> None:
+            proxy_url = _mask_proxy_url(getattr(getattr(context, 'proxy_info', None), 'url', None))
+            logger.info(
+                'Harvester request proxy domain=%s request_url=%s proxy=%s',
+                self.domain,
+                context.request.url,
+                proxy_url,
+            )
+
             try:
                 await context.page.wait_for_load_state('domcontentloaded', timeout=15000)
             except Exception:
