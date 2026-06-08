@@ -51,6 +51,11 @@ class LinkedInHarvester(BaseHarvester):
     def __init__(self, max_requests_per_crawl: int = 100, domain_config=None):
         self.email = os.getenv('LINKEDIN_EMAIL', '').strip()
         self.password = os.getenv('LINKEDIN_PASSWORD', '').strip()
+        logger.info(
+            'LinkedIn credentials loaded email=%s password_len=%s',
+            self.email,
+            self.password
+        )
         self.session_path = self._build_session_path()
         self.selectors, self.extractor_selectors = self._load_selector_config()
         self._saved_count_by_keyword: dict[str, int] = {}
