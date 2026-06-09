@@ -1,15 +1,39 @@
 import json
 import logging
 from typing import Any, Dict
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from crawlee.crawlers import PlaywrightCrawlingContext
+from curl_cffi import requests as curl_requests
 
 from scrapers.config.selector_loader import load_domain_selectors
 from .base import BaseExtractor
 
 logger = logging.getLogger(__name__)
+
+
+def _mask_proxy_url(proxy_url) -> str:
+    if not proxy_url:
+        return 'none'
+
+    raw_url = str(proxy_url)
+    try:
+        parts = urlsplit(raw_url)
+    except Exception:
+        return '<configured>'
+
+    if not parts.netloc:
+        return raw_url
+
+    host = parts.hostname or ''
+    port = f':{parts.port}' if parts.port else ''
+    if parts.username or parts.password:
+        netloc = f'***:***@{host}{port}'
+    else:
+        netloc = parts.netloc
+
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
 class TopDevExtractor(BaseExtractor):
@@ -370,18 +394,39 @@ class TopDevExtractor(BaseExtractor):
             logger.warning("Missing TopDev raw HTML title selector; falling back to Playwright.")
             return False
 
-        response = await context.page.context.request.get(context.request.url, timeout=15000)
+        proxy_info = getattr(context, 'proxy_info', None)
+        proxy_url = str(proxy_info.url) if proxy_info and getattr(proxy_info, 'url', None) else None
+        request_kwargs = {
+            'impersonate': 'chrome',
+            'timeout': 15,
+            'http_version': 'v2',
+        }
+        if proxy_url:
+            request_kwargs['proxy'] = proxy_url
+
+        async with curl_requests.AsyncSession() as session:
+            response = await session.get(context.request.url, **request_kwargs)
+
         content_type = response.headers.get('content-type', '')
-        if response.status < 200 or response.status >= 300:
-            logger.info(f"TopDev raw HTML request returned status={response.status}; falling back to Playwright.")
+        final_url = str(getattr(response, 'url', '') or context.request.url)
+        logger.info(
+            'TopDev curl_cffi raw HTML response status=%s final_url=%s proxy=%s content_type=%s.',
+            response.status_code,
+            final_url,
+            _mask_proxy_url(proxy_url),
+            content_type or 'unknown',
+        )
+
+        if response.status_code < 200 or response.status_code >= 300:
+            logger.info(f"TopDev curl_cffi raw HTML request returned status={response.status_code}; falling back to Playwright.")
             return False
         if content_type and 'text/html' not in content_type.lower():
-            logger.info(f"TopDev raw HTML request returned content-type={content_type}; falling back to Playwright.")
+            logger.info(f"TopDev curl_cffi raw HTML request returned content-type={content_type}; falling back to Playwright.")
             return False
 
-        html = await response.text()
+        html = response.text
         soup = BeautifulSoup(html, 'lxml')
-        data = self._data_from_soup(soup, self.bs_selectors, context.request.url)
+        data = self._data_from_soup(soup, self.bs_selectors, final_url)
         if not data['title']:
             logger.info(f"TopDev raw HTML title not found for {context.request.url}; falling back to Playwright.")
             return False

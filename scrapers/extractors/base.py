@@ -4,11 +4,14 @@ import logging
 import os
 import random
 from datetime import timedelta
+from pathlib import Path
 from typing import Any, Dict, List
 
 from asgiref.sync import sync_to_async
 from crawlee import ConcurrencySettings, Request
+from crawlee.configuration import Configuration
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
+from crawlee.events import LocalEventManager
 from crawlee.fingerprint_suite import DefaultFingerprintGenerator, HeaderGeneratorOptions
 from django.db import transaction
 from django.db.models import F, Q
@@ -41,10 +44,13 @@ class BaseExtractor(abc.ABC):
             self.request_delay_min_seconds,
             self._get_domain_int('request_delay_max_seconds', 3),
         )
-        self.failed_retry_cooldown_seconds = int(os.getenv('FAILED_RETRY_COOLDOWN_SECONDS', '600'))
+        self.failed_retry_cooldown_unit_seconds = int(os.getenv('FAILED_RETRY_COOLDOWN_UNIT_SECONDS', str(30 * 60)))
         self.max_session_rotations = int(os.getenv('CRAWLEE_MAX_SESSION_ROTATIONS', '0'))
         self.retry_on_blocked = os.getenv('CRAWLEE_RETRY_ON_BLOCKED', 'false').lower() == 'true'
         self.proxy_configuration = load_proxy_configuration(domain=self.domain)
+        self.crawlee_storage_dir = self._get_domain_storage_dir()
+        self.crawlee_configuration = Configuration(storage_dir=self.crawlee_storage_dir)
+        self.crawlee_event_manager = LocalEventManager().from_config(config=self.crawlee_configuration)
         self.crawler = self._setup_crawler()
 
     def _load_domain_config_safely(self):
@@ -61,6 +67,10 @@ class BaseExtractor(abc.ABC):
         value = getattr(self.domain_config, field_name, default)
         return default if value is None else int(value)
 
+    def _get_domain_storage_dir(self) -> str:
+        base_storage_dir = os.getenv('CRAWLEE_STORAGE_DIR') or './storage/extract'
+        return str(Path(base_storage_dir) / self.domain)
+
     def _setup_crawler(self) -> PlaywrightCrawler:
         concurrency_settings = ConcurrencySettings(
             desired_concurrency=3,
@@ -76,7 +86,10 @@ class BaseExtractor(abc.ABC):
             'max_session_rotations': self.max_session_rotations,
             'retry_on_blocked': self.retry_on_blocked,
             'proxy_configuration': self.proxy_configuration,
+            'configuration': self.crawlee_configuration,
+            'event_manager': self.crawlee_event_manager,
         }
+        logger.info('Using extractor Crawlee storage domain=%s dir=%s', self.domain, self.crawlee_storage_dir)
 
         if browser_pool:
             logger.info('Using browser backend: %s', get_browser_backend())
@@ -179,11 +192,19 @@ class BaseExtractor(abc.ABC):
         them to PROCESSING.
         """
         with transaction.atomic():
-            retry_after = timezone.now() - timedelta(seconds=self.failed_retry_cooldown_seconds)
+            now = timezone.now()
+            failed_retry_filter = Q()
+            for tried_count in range(3):
+                cooldown_seconds = tried_count * self.failed_retry_cooldown_unit_seconds
+                failed_retry_filter |= Q(
+                    status='FAILED',
+                    tried_count=tried_count,
+                    updated_at__lte=now - timedelta(seconds=cooldown_seconds),
+                )
             links = list(
                 JobLink.objects.select_for_update(skip_locked=True)
                 .filter(
-                    Q(status='PENDING') | Q(status='FAILED', tried_count__lt=3, updated_at__lte=retry_after),
+                    Q(status='PENDING') | failed_retry_filter,
                     domain=self.domain,
                 )[:batch_size]
             )

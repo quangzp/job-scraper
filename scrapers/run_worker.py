@@ -137,6 +137,8 @@ def main():
             from scrapers.utils.run_log import begin_domain_run, finish_domain_run, get_domain_run_usage
             
             running_tasks = {} # domain_name -> asyncio.Task
+            max_parallel_domains = max(1, env_int('EXTRACT_MAX_PARALLEL_DOMAINS', 2))
+            print(f"Extractor max parallel domains: {max_parallel_domains}")
 
             async def run_extractor_task(extractor, batch_size, run_info):
                 try:
@@ -190,6 +192,13 @@ def main():
 
                 # 3. Khởi động task cho domain mới
                 for domain in active_domains:
+                    if len(running_tasks) >= max_parallel_domains:
+                        print(
+                            f"Max parallel extractor domains reached ({max_parallel_domains}). "
+                            "Remaining domains will wait for the next cycle."
+                        )
+                        break
+
                     if domain.name not in running_tasks:
                         print(f"Phát hiện domain mới/active: {domain.name}. Đang khởi tạo Extractor...")
                         module_path = f"scrapers.extractors.{domain.name}"
