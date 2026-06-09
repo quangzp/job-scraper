@@ -452,6 +452,7 @@ class LinkedInHarvester(BaseHarvester):
         await page.goto(self.login_url, wait_until='domcontentloaded')
         await page.type(self._selector('login_email'), self.email, delay=100)
         await page.type(self._selector('login_password'), self.password, delay=100)
+        await page.wait_for_timeout(1800)
         await page.click(self._selector('login_submit'), delay=100)
         await page.wait_for_load_state('domcontentloaded', timeout=30000)
 
