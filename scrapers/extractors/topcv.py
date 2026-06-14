@@ -1,11 +1,13 @@
 import logging
+from uuid import uuid4
 from typing import Any, Dict
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from crawlee.crawlers import PlaywrightCrawlingContext
 from curl_cffi import requests as curl_requests
 
+from app_dashboard.models import JobLink
 from scrapers.config.selector_loader import load_domain_selectors
 from .base import BaseExtractor
 
@@ -51,6 +53,12 @@ class TopCVExtractor(BaseExtractor):
 
     def _load_selector_config(self) -> dict:
         return load_domain_selectors('topcv').get('extractor', {})
+
+    def build_request_url(self, link: JobLink) -> str:
+        parts = urlsplit(link.url)
+        query = dict(parse_qsl(parts.query, keep_blank_values=True))
+        query['u_sr_id'] = uuid4().hex
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
     def _is_brand_url(self, url: str) -> bool:
         return '/brand/' in urlsplit(url).path

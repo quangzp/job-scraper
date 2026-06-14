@@ -3,6 +3,11 @@ import sys
 import argparse
 import asyncio
 import random
+import shutil
+from datetime import date, timedelta
+
+
+STORAGE_RETENTION_DAYS = 3
 
 
 def env_int(name: str, default: int) -> int:
@@ -14,6 +19,59 @@ def env_int(name: str, default: int) -> int:
     except ValueError:
         print(f"Invalid integer value for {name}={value!r}. Using default={default}.")
         return default
+
+
+def build_harvest_storage_dir(base_storage_dir: str | None, run_info) -> str:
+    base_dir = base_storage_dir or os.getenv('CRAWLEE_STORAGE_DIR') or os.path.join('.', 'storage', 'harvest')
+    domain = str(run_info.domain).replace('/', '_').replace('\\', '_')
+    run_date = str(run_info.run_date).replace('/', '-').replace('\\', '-')
+    run_name = f"run-{int(run_info.run_number)}"
+    return os.path.join(base_dir, domain, run_date, run_name)
+
+
+def cleanup_daily_storage(base_storage_dir: str, current_run_date: str, retention_days: int = STORAGE_RETENTION_DAYS) -> None:
+    if retention_days <= 0 or not os.path.isdir(base_storage_dir):
+        return
+
+    try:
+        current_date = date.fromisoformat(str(current_run_date))
+    except ValueError:
+        print(f"Skip Crawlee storage cleanup: invalid current date {current_run_date!r}.")
+        return
+
+    cutoff_date = current_date - timedelta(days=retention_days - 1)
+    deleted_count = 0
+
+    for domain_name in os.listdir(base_storage_dir):
+        domain_path = os.path.join(base_storage_dir, domain_name)
+        if not os.path.isdir(domain_path):
+            continue
+
+        for day_name in os.listdir(domain_path):
+            day_path = os.path.join(domain_path, day_name)
+            if not os.path.isdir(day_path) or len(day_name) != 10:
+                continue
+
+            try:
+                day_date = date.fromisoformat(day_name)
+            except ValueError:
+                continue
+
+            if day_date >= cutoff_date:
+                continue
+
+            try:
+                shutil.rmtree(day_path)
+                deleted_count += 1
+            except OSError as exc:
+                print(f"Could not delete old Crawlee storage {day_path}: {exc}")
+
+    if deleted_count:
+        print(
+            f"Deleted {deleted_count} old Crawlee storage day folder(s) under {base_storage_dir}. "
+            f"Retention={retention_days} days."
+        )
+
 
 def setup_django():
     # Thêm thư mục gốc vào sys.path để Django có thể tìm thấy core.settings
@@ -64,6 +122,8 @@ def main():
             from asgiref.sync import sync_to_async
             from scrapers.harvesters.base import BaseHarvester
             from scrapers.utils.run_log import begin_domain_run, finish_domain_run, get_domain_run_usage
+
+            harvest_storage_base_dir = args.storage_dir or os.getenv('CRAWLEE_STORAGE_DIR') or os.path.join('.', 'storage', 'harvest')
             
             print("Manager Harvester đã khởi động. Quét hệ thống theo chu kỳ ngẫu nhiên.")
             
@@ -103,6 +163,10 @@ def main():
                                 f"run_date={run_info.run_date} started_at={run_info.started_at}."
                             )
                             try:
+                                cleanup_daily_storage(harvest_storage_base_dir, run_info.run_date)
+                                harvest_storage_dir = build_harvest_storage_dir(harvest_storage_base_dir, run_info)
+                                os.environ['CRAWLEE_STORAGE_DIR'] = harvest_storage_dir
+                                print(f"Using Harvester Crawlee storage: {harvest_storage_dir}")
                                 harvester = harvester_class(domain_config=domain)
                                 for kw in keywords:
                                     await harvester.harvest(kw.name)
@@ -135,6 +199,8 @@ def main():
             from asgiref.sync import sync_to_async
             from scrapers.extractors.base import BaseExtractor
             from scrapers.utils.run_log import begin_domain_run, finish_domain_run, get_domain_run_usage
+
+            extract_storage_base_dir = args.storage_dir or os.getenv('CRAWLEE_STORAGE_DIR') or os.path.join('.', 'storage', 'extract')
             
             running_tasks = {} # domain_name -> asyncio.Task
             max_parallel_domains = max(1, env_int('EXTRACT_MAX_PARALLEL_DOMAINS', 2))
@@ -220,6 +286,7 @@ def main():
                                 f"daily_runs={run_info.run_number}/{run_info.configured_runs} "
                                 f"run_date={run_info.run_date} started_at={run_info.started_at}."
                             )
+                            cleanup_daily_storage(extract_storage_base_dir, run_info.run_date)
                             extractor = extractor_class(domain_config=domain)
                             batch_size = max(1, int(getattr(domain, 'extract_batch_size', 3) or 3))
                             task = asyncio.create_task(run_extractor_task(extractor, batch_size, run_info))

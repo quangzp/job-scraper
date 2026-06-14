@@ -8,6 +8,7 @@ from crawlee.crawlers import PlaywrightCrawlingContext
 from asgiref.sync import sync_to_async
 
 from scrapers.config.selector_loader import load_domain_selectors
+from scrapers.utils.text_cleaner import remove_query_and_fragment
 
 from app_dashboard.models import Keyword
 from .base import BaseHarvester
@@ -66,7 +67,7 @@ class TopCVHarvester(BaseHarvester):
         )
         
         # Làm sạch và lọc các URL đã tồn tại trong DB
-        clean_links = [urljoin(request.url, link) for link in job_links]
+        clean_links = [remove_query_and_fragment(urljoin(request.url, link)) for link in job_links]
         new_links = await self.filter_existing_links(clean_links)
 
         # Lưu vào DB

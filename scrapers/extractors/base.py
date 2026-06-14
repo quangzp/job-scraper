@@ -69,7 +69,7 @@ class BaseExtractor(abc.ABC):
 
     def _get_domain_storage_dir(self) -> str:
         base_storage_dir = os.getenv('CRAWLEE_STORAGE_DIR') or './storage/extract'
-        return str(Path(base_storage_dir) / self.domain)
+        return str(Path(base_storage_dir) / self.domain / timezone.localdate().isoformat())
 
     def _setup_crawler(self) -> PlaywrightCrawler:
         concurrency_settings = ConcurrencySettings(
@@ -185,6 +185,10 @@ class BaseExtractor(abc.ABC):
         """Optionally process a page from its raw HTML before rendered fallback."""
         return False
 
+    def build_request_url(self, link: JobLink) -> str:
+        """Return the URL to request for a DB link."""
+        return link.url
+
     @sync_to_async
     def fetch_pending_links(self, batch_size: int = 10) -> List[JobLink]:
         """
@@ -275,9 +279,11 @@ class BaseExtractor(abc.ABC):
             return 0
 
         logger.info(f"Fetched {len(links)} links for extraction.")
+        batch_timestamp_ms = int(timezone.now().timestamp() * 1000)
         requests = [
             Request.from_url(
-                url=link.url,
+                url=self.build_request_url(link),
+                unique_key=f'{self.domain}:{link.id}:{batch_timestamp_ms}',
                 user_data={'link_id': link.id},
             )
             for link in links
