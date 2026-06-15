@@ -3,7 +3,6 @@ from typing import List
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
-from crawlee import Request
 from crawlee.crawlers import PlaywrightCrawlingContext
 from asgiref.sync import sync_to_async
 
@@ -104,9 +103,10 @@ class TopCVHarvester(BaseHarvester):
                     abs_next_link = urljoin(request.url, next_href)
                     logger.info(f"Phát hiện trang tiếp theo: {abs_next_link}")
                     await context.add_requests([
-                        Request.from_url(
+                        self.build_harvest_request(
                             url=abs_next_link,
                             label='LIST_PAGE',
+                            keyword_name=keyword_name or '',
                             user_data=self.next_page_user_data(
                                 request,
                                 keyword_name=keyword_name,
@@ -137,10 +137,11 @@ class TopCVHarvester(BaseHarvester):
 
         # Tạo list Request objects chứa thông tin user_data
         requests = [
-            Request.from_url(
+            self.build_harvest_request(
                 url=url, 
-                user_data={'keyword_name': keyword_name, 'page_number': 1}, 
-                label='LIST_PAGE'
+                keyword_name=keyword_name,
+                user_data={'page_number': 1}, 
+                label='LIST_PAGE',
             )
             for url in start_urls
         ]

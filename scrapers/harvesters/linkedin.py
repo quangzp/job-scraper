@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from asgiref.sync import sync_to_async
-from crawlee import Request
 from crawlee.crawlers import PlaywrightCrawlingContext
 from django.db import transaction
 
@@ -1078,14 +1077,15 @@ class LinkedInHarvester(BaseHarvester):
             if self._saved_count_by_keyword.get(keyword_name, 0) >= self.max_jobs_per_keyword:
                 break
 
-            request = Request.from_url(
+            request = self.build_harvest_request(
                 url=self.feed_url,
                 label='FEED_TO_JOBS',
+                keyword_name=keyword_name,
                 user_data={
-                    'keyword_name': keyword_name,
                     'location': location,
                     'page_number': 1,
                 },
+                unique_context=location,
             )
             await self.crawler.run([request])
 

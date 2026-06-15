@@ -1,46 +1,26 @@
 import abc
 import asyncio
+import hashlib
 import logging
 import os
 import random
 from datetime import timedelta
 from typing import Any, List
-from urllib.parse import urlsplit, urlunsplit
 
 from asgiref.sync import sync_to_async
+from crawlee import Request
+from crawlee.configuration import Configuration
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
+from crawlee.events import LocalEventManager
 from crawlee.fingerprint_suite import DefaultFingerprintGenerator, HeaderGeneratorOptions
 from django.utils import timezone
 
 # Classes in scrapers/ are called through run_worker.py after django.setup().
 from app_dashboard.models import JobLink, Keyword, TargetDomain
 from scrapers.utils.browser_pool import build_browser_pool, get_browser_backend
-from scrapers.utils.proxy import load_proxy_configuration
+from scrapers.utils.proxy import load_proxy_configuration, mask_proxy_url
 
 logger = logging.getLogger(__name__)
-
-
-def _mask_proxy_url(proxy_url) -> str:
-    if not proxy_url:
-        return 'none'
-
-    raw_url = str(proxy_url)
-    try:
-        parts = urlsplit(raw_url)
-    except Exception:
-        return '<configured>'
-
-    if not parts.netloc:
-        return raw_url
-
-    host = parts.hostname or ''
-    port = f':{parts.port}' if parts.port else ''
-    if parts.username or parts.password:
-        netloc = f'***:***@{host}{port}'
-    else:
-        netloc = parts.netloc
-
-    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
 def _env_int(name: str, default: int) -> int:
@@ -68,7 +48,10 @@ class BaseHarvester(abc.ABC):
             self.request_delay_min_seconds,
             self._get_domain_int('request_delay_max_seconds', 3),
         )
-        self.proxy_configuration = load_proxy_configuration(domain=self.domain)
+        self.proxy_configuration = load_proxy_configuration(domain=self.domain, component='Harvester')
+        self.crawlee_storage_dir = os.getenv('CRAWLEE_STORAGE_DIR') or './storage/harvest'
+        self.crawlee_configuration = Configuration(storage_dir=self.crawlee_storage_dir)
+        self.crawlee_event_manager = LocalEventManager().from_config(config=self.crawlee_configuration)
         self.request_handler_timeout_seconds = self._get_request_handler_timeout_seconds()
         self.max_request_retries = self._get_max_request_retries()
         logger.info(
@@ -135,6 +118,7 @@ class BaseHarvester(abc.ABC):
             headless=True,
             browser_new_context_options=browser_new_context_options,
         )
+        logger.info('Using harvester Crawlee storage domain=%s dir=%s', self.domain, self.crawlee_storage_dir)
         if browser_pool:
             logger.info('Using browser backend: %s', get_browser_backend())
             crawler_options = {
@@ -143,6 +127,8 @@ class BaseHarvester(abc.ABC):
                 'request_handler_timeout': timedelta(seconds=self.request_handler_timeout_seconds),
                 'browser_pool': browser_pool,
                 'proxy_configuration': self.proxy_configuration,
+                'configuration': self.crawlee_configuration,
+                'event_manager': self.crawlee_event_manager,
                 **session_crawler_options,
             }
             crawler = PlaywrightCrawler(**crawler_options)
@@ -163,6 +149,8 @@ class BaseHarvester(abc.ABC):
                 'headless': True,
                 'fingerprint_generator': fingerprint_generator,
                 'proxy_configuration': self.proxy_configuration,
+                'configuration': self.crawlee_configuration,
+                'event_manager': self.crawlee_event_manager,
                 **session_crawler_options,
             }
             if browser_new_context_options:
@@ -171,7 +159,7 @@ class BaseHarvester(abc.ABC):
 
         @crawler.router.default_handler
         async def request_handler(context: PlaywrightCrawlingContext) -> None:
-            proxy_url = _mask_proxy_url(getattr(getattr(context, 'proxy_info', None), 'url', None))
+            proxy_url = mask_proxy_url(getattr(getattr(context, 'proxy_info', None), 'url', None))
             logger.info(
                 'Harvester request proxy domain=%s request_url=%s proxy=%s',
                 self.domain,
@@ -300,6 +288,43 @@ class BaseHarvester(abc.ABC):
         user_data.update(extra)
         return user_data
 
+    def _harvest_request_unique_key(
+        self,
+        url: str,
+        keyword_name: str,
+        page_number: int,
+        unique_context: str = '',
+    ) -> str:
+        raw_key = f'{self.domain}|{keyword_name}|{page_number}|{unique_context}|{url}'
+        digest = hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:24]
+        return f'harvest:{self.domain}:{digest}'
+
+    def build_harvest_request(
+        self,
+        *,
+        url: str,
+        keyword_name: str,
+        label: str = 'LIST_PAGE',
+        user_data: dict[str, Any] | None = None,
+        unique_context: str = '',
+    ) -> Request:
+        request_user_data = dict(user_data or {})
+        request_user_data.setdefault('keyword_name', keyword_name)
+        request_user_data.setdefault('page_number', 1)
+        page_number = int(request_user_data.get('page_number', 1) or 1)
+
+        return Request.from_url(
+            url=url,
+            label=label,
+            user_data=request_user_data,
+            unique_key=self._harvest_request_unique_key(
+                url,
+                keyword_name,
+                page_number,
+                unique_context,
+            ),
+        )
+
     @sync_to_async
     def filter_existing_links(self, urls: List[str]) -> List[str]:
         """Return URLs that are not already present in JobLink."""
@@ -359,5 +384,10 @@ class BaseHarvester(abc.ABC):
             logger.warning(f"No start URLs generated for keyword: {keyword_name}")
             return
 
-        await self.crawler.run(start_urls)
+        requests = [
+            self.build_harvest_request(url=url, keyword_name=keyword_name)
+            for url in start_urls
+        ]
+
+        await self.crawler.run(requests)
         logger.info(f"Finished harvest for keyword={keyword_name} domain={self.domain}")

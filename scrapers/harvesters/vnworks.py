@@ -2,7 +2,6 @@ import logging
 from typing import List
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
-from crawlee import Request
 from crawlee.crawlers import PlaywrightCrawlingContext
 from asgiref.sync import sync_to_async
 
@@ -173,9 +172,10 @@ class VNWorksHarvester(BaseHarvester):
             next_page_url = self._build_page_url(request.url, next_page_number)
             logger.info(f"Phát hiện trang tiếp theo VNWorks: {next_page_url}")
             await context.add_requests([
-                Request.from_url(
+                self.build_harvest_request(
                     url=next_page_url,
                     label='LIST_PAGE',
+                    keyword_name=keyword_name or '',
                     user_data=self.next_page_user_data(
                         request,
                         keyword_name=keyword_name,
@@ -205,10 +205,11 @@ class VNWorksHarvester(BaseHarvester):
 
         # Tạo list Request objects
         requests = [
-            Request.from_url(
+            self.build_harvest_request(
                 url=url, 
-                user_data={'keyword_name': keyword_name, 'page_number': 1}, 
-                label='LIST_PAGE'
+                keyword_name=keyword_name,
+                user_data={'page_number': 1}, 
+                label='LIST_PAGE',
             )
             for url in start_urls
         ]

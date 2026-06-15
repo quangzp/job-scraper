@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from app_dashboard.models import JobDetail, JobLink, TargetDomain
 from scrapers.utils.browser_pool import build_browser_pool, get_browser_backend
-from scrapers.utils.proxy import load_proxy_configuration
+from scrapers.utils.proxy import load_proxy_configuration, mask_proxy_url
 
 logger = logging.getLogger(__name__)
 logging.getLogger('crawlee.storage_clients').setLevel(logging.ERROR)
@@ -47,7 +47,7 @@ class BaseExtractor(abc.ABC):
         self.failed_retry_cooldown_unit_seconds = int(os.getenv('FAILED_RETRY_COOLDOWN_UNIT_SECONDS', str(30 * 60)))
         self.max_session_rotations = int(os.getenv('CRAWLEE_MAX_SESSION_ROTATIONS', '0'))
         self.retry_on_blocked = os.getenv('CRAWLEE_RETRY_ON_BLOCKED', 'false').lower() == 'true'
-        self.proxy_configuration = load_proxy_configuration(domain=self.domain)
+        self.proxy_configuration = load_proxy_configuration(domain=self.domain, component='Extractor')
         self.crawlee_storage_dir = self._get_domain_storage_dir()
         self.crawlee_configuration = Configuration(storage_dir=self.crawlee_storage_dir)
         self.crawlee_event_manager = LocalEventManager().from_config(config=self.crawlee_configuration)
@@ -116,6 +116,14 @@ class BaseExtractor(abc.ABC):
         @crawler.router.default_handler
         async def request_handler(context: PlaywrightCrawlingContext) -> None:
             try:
+                proxy_url = mask_proxy_url(getattr(getattr(context, 'proxy_info', None), 'url', None))
+                logger.info(
+                    'Extractor request proxy domain=%s request_url=%s proxy=%s',
+                    self.domain,
+                    context.request.url,
+                    proxy_url,
+                )
+
                 try:
                     if await self.try_process_raw_html(context):
                         return
